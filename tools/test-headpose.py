@@ -73,13 +73,14 @@ def main():
 
     print("Simulated headtracking: FreeTrack={} UDP={}  ({} Hz)".format(
         bool(mmf), bool(udp), RATE))
-    print("Arrows = yaw/pitch  Q/E = roll  +/- = step  C = center  A = auto-sway  Esc = quit")
+    print("Arrows = yaw/pitch  Q/E = roll  +/- = step  C = center  A = auto-sway demo  Esc = quit")
+    print("Starts still — hold the arrows to move the camera; press A for automatic sway.")
     print("If the in-game HUD shows 'tracking' and the camera moves, the mod works.")
     print()
 
     yaw = pitch = roll = 0.0
     step = 2.0
-    auto = True
+    auto = False
     t0 = time.time()
     frame = 0
     try:
