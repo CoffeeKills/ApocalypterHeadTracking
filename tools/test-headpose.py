@@ -29,6 +29,19 @@ RATE = 60.0
 
 def make_mmf_writer():
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    # Without explicit restype, ctypes truncates the 64-bit handle to a 32-bit int.
+    kernel32.CreateFileMappingW.restype = wintypes.HANDLE
+    kernel32.CreateFileMappingW.argtypes = [wintypes.HANDLE, ctypes.c_void_p,
+                                            wintypes.DWORD, wintypes.DWORD,
+                                            wintypes.DWORD, wintypes.LPCWSTR]
+    kernel32.MapViewOfFile.restype = ctypes.c_void_p
+    kernel32.MapViewOfFile.argtypes = [wintypes.HANDLE, wintypes.DWORD,
+                                       wintypes.DWORD, wintypes.DWORD, ctypes.c_size_t]
+    kernel32.UnmapViewOfFile.argtypes = [ctypes.c_void_p]
+    kernel32.UnmapViewOfFile.restype = wintypes.BOOL
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+
     PAGE_READWRITE = 0x04
     FILE_MAP_ALL_ACCESS = 0x000F001F
     h = kernel32.CreateFileMappingW(
