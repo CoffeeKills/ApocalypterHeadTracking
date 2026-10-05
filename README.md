@@ -42,10 +42,10 @@ first run) and in the Apocasetter Mods menu:
 | `[HeadTracking] Enabled` | true | bool | Master switch. |
 | `Input` | FreeTrack | FreeTrack / OpenTrackUdp | Tracker input source. |
 | `UdpPort` | 4242 | 1–65535 | UDP listen port (OpenTrack UDP mode). |
-| `SensitivityYaw` / `SensitivityPitch` | 1.0 | 0–3 | Camera degrees per head degree. |
+| `SensitivityYaw` / `SensitivityPitch` | 0.5 | 0–3 | Camera degrees per head degree (0.5× default: real head movement is small). |
 | `SensitivityRoll` | 0 | 0–3 | Roll response (0 = off). |
 | `InvertYaw` / `InvertPitch` | false | bool | Flip direction. |
-| `Smoothing` | 0.5 | 0–0.95 | How quickly the camera follows. |
+| `Smoothing` | 0.5 | 0–0.95 | Higher = the camera follows more slowly and smoothly (0 = instant). |
 | `MaxPitch` | 80 | 0–180 | Pitch clamp, degrees. |
 | `RecenterKey` | F8 | key | Hold-this-pose neutral. |
 | `ToggleKey` | None | key | In-game on/off switch. |

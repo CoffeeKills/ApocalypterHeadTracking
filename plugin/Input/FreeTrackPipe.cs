@@ -24,6 +24,9 @@ namespace ApocalypterHeadTracking.Input
         private MemoryMappedFile _mmf;
         private MemoryMappedViewAccessor _view;
         private float _retryAt;
+        private byte[] _lastBytes = new byte[PoseSize];
+        private bool _haveLast;
+        private double _lastChangeTime = double.MinValue;
 
         public string ModeName { get { return "FreeTrack"; } }
 
@@ -50,6 +53,28 @@ namespace ApocalypterHeadTracking.Input
                 pose.X = _view.ReadSingle(PoseOffset + 12);
                 pose.Y = _view.ReadSingle(PoseOffset + 16);
                 pose.Z = _view.ReadSingle(PoseOffset + 20);
+                // Staleness: the mapping survives the tracker process (the game's
+                // open handle keeps it alive) and keeps the last-written pose
+                // frozen. Only trust values that are actually changing.
+                byte[] now = new byte[PoseSize];
+                _view.ReadArray(PoseOffset, now, 0, PoseSize);
+                double t = UnityEngine.Time.realtimeSinceStartup;
+                if (!_haveLast)
+                {
+                    _lastChangeTime = t;
+                    Buffer.BlockCopy(now, 0, _lastBytes, 0, PoseSize);
+                    _haveLast = true;
+                }
+                else if (!BytesEqual(now))
+                {
+                    _lastChangeTime = t;
+                    Buffer.BlockCopy(now, 0, _lastBytes, 0, PoseSize);
+                }
+                else if (t - _lastChangeTime > 0.5)
+                {
+                    pose = default(HeadPose);
+                    return false;   // tracker gone: frozen values are stale
+                }
                 pose.Valid = true;
                 return true;
             }
@@ -60,6 +85,18 @@ namespace ApocalypterHeadTracking.Input
                 _retryAt = UnityEngine.Time.realtimeSinceStartup + 1f;
                 return false;
             }
+        }
+
+        private bool BytesEqual(byte[] now)
+        {
+            for (int i = 0; i < PoseSize; i++)
+            {
+                if (now[i] != _lastBytes[i])
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private bool TryOpen()
@@ -90,6 +127,8 @@ namespace ApocalypterHeadTracking.Input
                 _mmf.Dispose();
                 _mmf = null;
             }
+            _haveLast = false;
+            _lastChangeTime = double.MinValue;
         }
 
         public void Dispose()

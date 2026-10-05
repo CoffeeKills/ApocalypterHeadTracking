@@ -113,8 +113,10 @@ namespace ApocalypterHeadTracking.Runtime
             targetPitch = Mathf.Clamp(targetPitch, -maxPitch, maxPitch);
 
             Vector3 target = new Vector3(targetPitch, targetYaw, targetRoll);
-            float s = HeadTrackingSettings.Smoothing;
-            float k = 1f - Mathf.Exp(-Time.unscaledDeltaTime * (5f + 25f * s));
+            // Smoothing 0 = instant, 1 = slowest: exponential approach with a
+            // time constant of Smoothing * 0.5 s.
+            float tau = HeadTrackingSettings.Smoothing * 0.5f;
+            float k = tau <= 0.0001f ? 1f : 1f - Mathf.Exp(-Time.unscaledDeltaTime / tau);
             _smooth = Vector3.Lerp(_smooth, target, k);
 
             DisplayYaw = _smooth.y;

@@ -6,7 +6,7 @@ namespace ApocalypterHeadTracking.Settings
     {
         public const float SensMin = 0f;
         public const float SensMax = 3f;
-        public const float SensDefault = 1f;
+        public const float SensDefault = 0.5f;   // real head movement is small: 1:1 is too much
 
         public const float SmoothMin = 0f;
         public const float SmoothMax = 0.95f;

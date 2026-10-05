@@ -52,9 +52,13 @@ def make_mmf_writer():
     if not view:
         raise ctypes.WinError(ctypes.get_last_error())
     buf = (ctypes.c_byte * MMF_SIZE).from_address(view)
-    struct.pack_into("<iii", buf, 0, 0, 640, 480)  # dataID, camW, camH
+    struct.pack_into("<iii", buf, 0, 1, 640, 480)  # dataID, camW, camH
+
+    frame = [1]
 
     def write(yaw, pitch, roll):
+        frame[0] += 1
+        struct.pack_into("<i", buf, 0, frame[0])  # dataID advances per frame
         struct.pack_into("<ffffff", buf, 12, yaw, pitch, roll, 0.0, 0.0, 0.0)
 
     return write
@@ -73,6 +77,7 @@ def main():
 
     print("Simulated headtracking: FreeTrack={} UDP={}  ({} Hz)".format(
         bool(mmf), bool(udp), RATE))
+    print("CLICK THIS WINDOW FIRST — keys only reach this console while it is focused.")
     print("Arrows = yaw/pitch  Q/E = roll  +/- = step  C = center  A = auto-sway demo  Esc = quit")
     print("Starts still — hold the arrows to move the camera; press A for automatic sway.")
     print("If the in-game HUD shows 'tracking' and the camera moves, the mod works.")
@@ -86,12 +91,14 @@ def main():
     try:
         while True:
             # --- keys ---
+            pressed = False
             while msvcrt.kbhit():
                 ch = msvcrt.getwch()
                 if ch == "\x1b":
                     return
                 if ch in ("\x00", "\xe0"):
                     code = msvcrt.getwch()
+                    pressed = True
                     if code == "H":
                         pitch += step
                     elif code == "P":
@@ -102,7 +109,7 @@ def main():
                         yaw += step
                 elif ch in ("a", "A"):
                     auto = not auto
-                    print("auto-sway:", "on" if auto else "off")
+                    print("auto-sway:", "on" if auto else "off (relaxing to center)")
                 elif ch in ("c", "C"):
                     yaw = pitch = roll = 0.0
                     print("centered")
@@ -112,13 +119,24 @@ def main():
                     step = max(step - 1.0, 0.5)
                 elif ch in ("q", "Q"):
                     roll += step
+                    pressed = True
                 elif ch in ("e", "E"):
                     roll -= step
+                    pressed = True
 
             t = time.time() - t0
             if auto:
-                yaw = 15.0 * math.sin(t * 0.5)
-                pitch = 8.0 * math.sin(t * 0.7 + 1.0)
+                # Subtle, realistic head sway: real head movement is small.
+                yaw = 8.0 * math.sin(t * 0.5)
+                pitch = 4.0 * math.sin(t * 0.7 + 1.0)
+            elif not pressed:
+                # Demo off and no keys held: relax the pose back to center so the
+                # in-game camera returns to vanilla (also helps when this window
+                # loses focus and stops hearing keys).
+                decay = min(1.0, 8.0 / RATE)
+                yaw *= 1.0 - decay
+                pitch *= 1.0 - decay
+                roll *= 1.0 - decay
 
             if mmf:
                 mmf(yaw, pitch, roll)
