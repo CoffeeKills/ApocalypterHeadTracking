@@ -33,7 +33,16 @@ frame and **forces z (roll) to 0**. Consequences:
 
 `CameraMovementController` applies position/rotation/FOV offsets in **LateUpdate**.
 Its serialized default `cinemachineMode = true` reads the current localRotation
-once per frame and multiplies its offset — additive-friendly. The non-cinemachine
+once per frame and multiplies its offset — additive-friendly. **Correction
+(0.1.1 audit):** it multiplies on the RIGHT (`local = local * shake`) and does not
+strip the previous frame's shake, so its increments accumulate in the transform. A
+mod offset that is post-multiplied and stripped from the right gets interleaved
+with those increments. The mod therefore pre-multiplies (`H * vanilla`), which
+strips exactly in either LateUpdate order. `ResetCamera()` writes an absolute
+`originalRotation` when it has no layers. No caller was found in the analysed
+data. If one exists, the mod's next strip would leave the inverse of the previous
+head offset in the transform until the next reset. That is a residual risk, listed
+in docs/audit-0.1.1.md. The non-cinemachine
 mode snaps to a cached originalRotation; if that flag is ever off, a hard conflict
 would exist (it is on in the shipped scene).
 

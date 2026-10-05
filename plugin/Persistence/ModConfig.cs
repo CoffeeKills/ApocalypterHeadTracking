@@ -40,7 +40,12 @@ namespace ApocalypterHeadTracking.Persistence
                 return;
             }
             _enabled.Value = value;
-            _config.Save();
+            // SaveOnConfigSet (BepInEx default: on) already wrote the file; 0.1.0
+            // saved a second time on every toggle-key press.
+            if (!_config.SaveOnConfigSet)
+            {
+                _config.Save();
+            }
         }
 
         public static void Load(ConfigFile config)
@@ -53,8 +58,12 @@ namespace ApocalypterHeadTracking.Persistence
 
             _enabled = config.Bind("HeadTracking", "Enabled", true,
                 "Master switch for headtracking. Off = the camera behaves exactly like vanilla.");
+            // 0.1.1: accepted-value list (0, 1). AcceptableValueList falls back to its
+            // FIRST value (0 = FreeTrack) for anything else — the same meaning an
+            // out-of-range value had in 0.1.0 (runtime treated "not 1" as FreeTrack).
             _inputMode = config.Bind("HeadTracking", "Input", 0,
-                "Tracker input source: 0 = FreeTrack 2.0 shared memory (OpenTrack's 'FreeTrack 2.0' output), 1 = OpenTrack UDP.");
+                new ConfigDescription("Tracker input source: 0 = FreeTrack 2.0 shared memory (OpenTrack's 'FreeTrack 2.0' output), 1 = OpenTrack UDP.",
+                    new AcceptableValueList<int>(0, 1)));
             _udpPort = config.Bind("HeadTracking", "UdpPort", Limits.PortDefault,
                 new ConfigDescription("UDP port to listen on when Input = OpenTrack UDP (OpenTrack: Output → UDP over network).",
                     new AcceptableValueRange<int>(Limits.PortMin, Limits.PortMax)));
@@ -71,10 +80,10 @@ namespace ApocalypterHeadTracking.Persistence
             _smoothing = BindRange("HeadTracking", "Smoothing", Limits.SmoothDefault, Limits.SmoothMin, Limits.SmoothMax,
                 "How quickly the camera follows the head (0 = instant, 0.95 = slowest).");
             _maxPitch = BindRange("HeadTracking", "MaxPitch", Limits.MaxPitchDefault, Limits.MaxPitchMin, Limits.MaxPitchMax,
-                "Clamp for the head pitch offset in degrees (the game's mouse pitch is clamped to 80).");
+                "Clamp for the head pitch offset in degrees. Mouse pitch + head pitch is additionally kept within ±89° so the view never flips.");
             _recenterKey = config.Bind("HeadTracking", "RecenterKey",
                 new KeyboardShortcut(KeyCode.F8),
-                "Hold-this-pose neutral: press while looking straight ahead to zero the offset.");
+                "Hold-this-pose neutral: press while looking straight ahead to zero the offset (only the main key is used; modifiers are ignored so it works while sprinting).");
             _toggleKey = config.Bind("HeadTracking", "ToggleKey",
                 new KeyboardShortcut(KeyCode.None),
                 "Key that switches headtracking on/off in-game (None = no key).");

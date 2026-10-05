@@ -1,4 +1,4 @@
-Apocalypter Head Tracking v0.1.0-alpha
+Apocalypter Head Tracking v0.1.1-alpha
 ======================================
 
 Headtracking for Apocalypter's first-person view via OpenTrack.
@@ -26,6 +26,17 @@ Install
 -------
 Copy ApocalypterHeadTracking.dll and ApocalypterHeadTracking.png into
 BepInEx\plugins\ while the game is closed.
+
+What's new in 0.1.1
+-------------------
+- FreeTrack input fixed. It was ~57x too weak and turned the wrong way. If you
+  raised the sensitivity to compensate, set it back to 0.5.
+- Holding your head still no longer snaps the view back to center.
+- Switching 1st/3rd person (C), toggling the mod, or loading a save no longer
+  leaves the camera permanently twisted.
+- Turning your head while looking up or down no longer tilts the horizon. The view
+  can't flip over the top.
+- A busy UDP port is shown on the HUD instead of failing silently.
 
 Requires BepInEx 5 (as shipped with the game's mod setup).
 If the camera turns the wrong way or the axes seem swapped, enable

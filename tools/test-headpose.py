@@ -6,11 +6,19 @@
 #   python test-headpose.py udp          # OpenTrack UDP only (mod Input = OpenTrack UDP)
 #
 # Keys:  arrows = yaw/pitch, Q/E = roll, +/- = step size, C = center (zero),
-#        A = auto-sway demo (default ON), Esc = quit.
+#        A = auto-sway demo (default OFF), H = hold still (pose frozen, tracker alive),
+#        F = freeze tracker (stop writing entirely), N = send one NaN frame, Esc = quit.
 #
-# The written field order matches the mod's readers (FreeTrack: yaw,pitch,roll,x,y,z;
-# UDP: x,y,z,yaw,pitch,roll) — this tool tests the mod's pipeline, not OpenTrack's
-# exact byte order (that still needs a real OpenTrack once available).
+# 0.1.1: this tool now ENCODES EXACTLY LIKE OPENTRACK (source-verified, see the mod's
+# FreeTrackPipe/OpenTrackUdp headers), instead of mirroring the mod's own readers:
+#   OpenTrack internal pose: yaw +right, pitch +down, roll +left, degrees, cm.
+#   FreeTrack 2.0 (proto-ft): Yaw = -yaw rad, Pitch = -pitch rad, Roll = +roll rad,
+#     X/Y/Z = cm*10, DataID += 1 per frame. (0.1.0 of this tool wrote DEGREES with no
+#     sign flips — which matched the 0.1.0 reader's bug, so the bug was invisible.)
+#   UDP (proto-udp): 6 LE doubles in Axis order TX,TY,TZ,Yaw,Pitch,Roll, unchanged.
+# Expected in game: Right arrow turns the view right, Up arrow looks up, Q rolls left,
+# identically for FreeTrack and UDP. H must keep the view where it is (0.1.0 snapped
+# back to center after 0.5 s); F must make the HUD say "waiting" and ease back.
 import ctypes
 import math
 import msvcrt
@@ -23,7 +31,7 @@ from ctypes import wintypes
 UDP_HOST = "127.0.0.1"
 UDP_PORT = 4242
 MMF_NAME = "FT_SharedMem"
-MMF_SIZE = 36  # int32 dataID + camW + camH, then 6 floats
+MMF_SIZE = 108  # sizeof(FTHeap): FTData (92 bytes) + GameID + table[8] + GameID2
 RATE = 60.0
 
 
@@ -57,9 +65,12 @@ def make_mmf_writer():
     frame = [1]
 
     def write(yaw, pitch, roll):
-        frame[0] += 1
-        struct.pack_into("<i", buf, 0, frame[0])  # dataID advances per frame
-        struct.pack_into("<ffffff", buf, 12, yaw, pitch, roll, 0.0, 0.0, 0.0)
+        # Arguments: OpenTrack internal pose (deg). Encode like proto-ft pose().
+        d2r = math.pi / 180.0
+        frame[0] = (frame[0] + 1) & 0xFFFFFFFF
+        struct.pack_into("<ffffff", buf, 12, -yaw * d2r, -pitch * d2r, roll * d2r,
+                         0.0, 0.0, 0.0)
+        struct.pack_into("<I", buf, 0, frame[0])  # DataID ticks every pose() call
 
     return write
 
@@ -78,12 +89,15 @@ def main():
     print("Simulated headtracking: FreeTrack={} UDP={}  ({} Hz)".format(
         bool(mmf), bool(udp), RATE))
     print("CLICK THIS WINDOW FIRST — keys only reach this console while it is focused.")
-    print("Arrows = yaw/pitch  Q/E = roll  +/- = step  C = center  A = auto-sway demo  Esc = quit")
+    print("Arrows = yaw/pitch  Q/E = roll  +/- = step  C = center  A = auto-sway demo")
+    print("H = hold still  F = freeze tracker  N = one NaN frame  Esc = quit")
     print("Starts still — hold the arrows to move the camera; press A for automatic sway.")
     print("If the in-game HUD shows 'tracking' and the camera moves, the mod works.")
     print()
 
+    # Operator intent: yaw +right, pitch +UP, roll +left (converted below).
     yaw = pitch = roll = 0.0
+    hold = freeze = nan_once = False
     step = 2.0
     auto = False
     t0 = time.time()
@@ -110,6 +124,14 @@ def main():
                 elif ch in ("a", "A"):
                     auto = not auto
                     print("auto-sway:", "on" if auto else "off (relaxing to center)")
+                elif ch in ("h", "H"):
+                    hold = not hold
+                    print("hold still:", "on (pose constant, tracker alive)" if hold else "off")
+                elif ch in ("f", "F"):
+                    freeze = not freeze
+                    print("tracker", "FROZEN (no writes)" if freeze else "running")
+                elif ch in ("n", "N"):
+                    nan_once = True
                 elif ch in ("c", "C"):
                     yaw = pitch = roll = 0.0
                     print("centered")
@@ -129,7 +151,7 @@ def main():
                 # Subtle, realistic head sway: real head movement is small.
                 yaw = 8.0 * math.sin(t * 0.5)
                 pitch = 4.0 * math.sin(t * 0.7 + 1.0)
-            elif not pressed:
+            elif not pressed and not hold:
                 # Demo off and no keys held: relax the pose back to center so the
                 # in-game camera returns to vanilla (also helps when this window
                 # loses focus and stops hearing keys).
@@ -138,11 +160,18 @@ def main():
                 pitch *= 1.0 - decay
                 roll *= 1.0 - decay
 
-            if mmf:
-                mmf(yaw, pitch, roll)
-            if udp:
-                packet = struct.pack("<6d", 0.0, 0.0, 0.0, yaw, pitch, roll)
-                udp.sendto(packet, (UDP_HOST, UDP_PORT))
+            # Intent -> OpenTrack internal convention (pitch +down).
+            ot_yaw, ot_pitch, ot_roll = yaw, -pitch, roll
+            if nan_once:
+                ot_roll = float("nan")
+                nan_once = False
+                print("sent one NaN frame (the mod must ignore it)")
+            if not freeze:
+                if mmf:
+                    mmf(ot_yaw, ot_pitch, ot_roll)
+                if udp:
+                    packet = struct.pack("<6d", 0.0, 0.0, 0.0, ot_yaw, ot_pitch, ot_roll)
+                    udp.sendto(packet, (UDP_HOST, UDP_PORT))
 
             frame += 1
             if frame % 10 == 0:

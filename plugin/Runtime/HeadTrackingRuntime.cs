@@ -1,7 +1,9 @@
+using System;
 using ApocalypterHeadTracking.Input;
 using ApocalypterHeadTracking.Persistence;
 using ApocalypterHeadTracking.Settings;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace ApocalypterHeadTracking.Runtime
 {
@@ -9,64 +11,91 @@ namespace ApocalypterHeadTracking.Runtime
     /// Reads the tracker pose in Update, applies a smoothed additive rotation to the
     /// first-person camera in LateUpdate.
     ///
-    /// Camera facts (see README, load-bearing): the game's mouse look is PlayMaker
-    /// MouseLook actions that overwrite PlayerCameraHolder's localEulerAngles every
-    /// frame (roll forced to 0), so the offset goes on the CHILD "PlayerCamera" GO
-    /// (tag MainCamera), which has no per-frame rotation writer. The vehicle camera
-    /// switch deactivates PlayerCamera for 3rd person and re-activates it for 1st —
-    /// checking activeInHierarchy is the whole "first-person only" rule.
+    /// Camera facts (README, load-bearing): PlayMaker MouseLook overwrites
+    /// PlayerCameraHolder's localEulerAngles every frame (roll forced to 0), so the
+    /// offset goes on the CHILD "PlayerCamera", which has no absolute per-frame
+    /// rotation writer. The vehicle camera switch deactivates PlayerCamera for 3rd
+    /// person — activeInHierarchy is the whole "first-person only" rule.
+    ///
+    /// Offset invariant (0.1.1): our offset H is on the camera transform iff
+    /// _hasOffset, and then localRotation == H * vanilla, with H the exact value we
+    /// wrote last. Every path that stops applying (disabled, camera inactive,
+    /// camera replaced, tracker decayed to zero, runner disabled/destroyed) strips
+    /// H first — so the camera is always handed back exactly as the game left it.
+    ///
+    /// Why H is PRE-multiplied (0.1.1): CameraMovementPro (cinemachineMode) does
+    /// localRotation = localRotation * shake every LateUpdate, i.e. it multiplies
+    /// on the RIGHT of whatever is there. With H on the left, stripping H^-1 from
+    /// the left is exact no matter whether CMP's LateUpdate runs before or after
+    /// ours (their execution order is undefined). The old post-multiply strip
+    /// (local * Inverse(lastApplied)) left CMP's shake conjugated by H every frame.
     /// </summary>
     public class HeadTrackingRuntime : MonoBehaviour
     {
-        public string Status = "off";          // for the HUD
+        // ------------------------------------------------------------- HUD read-outs
+        public string Status = "off";
+        public bool CameraActive;
         public float DisplayYaw;
         public float DisplayPitch;
 
+        private const string HolderName = "PlayerCameraHolder";
+        private const string CameraName = "PlayerCamera";
+        private const float ResolveInterval = 0.5f;      // throttled GameObject.Find
+        private const float InputRetryInterval = 2f;     // e.g. UDP port busy
+        private const float TotalPitchLimit = 89f;       // holder pitch + head pitch
+
+        private const int SourceNone = -1;
+        private const int SourceSimulated = 100;
+
+        // ------------------------------------------------------------- input state
         private ITrackerInput _input;
-        private int _inputMode = -1;
+        private int _source = SourceNone;
+        private int _sourcePort;
+        private float _inputRetryAt;
+        private bool _inputErrorLogged;
+        private string _inputError;
+
         private HeadPose _center;
         private bool _haveCenter;
-        private Vector3 _smooth;               // smoothed effective yaw/pitch/roll (deg)
-        private Quaternion _lastApplied = Quaternion.identity;
-        private bool _offsetActive;
-
-        private GameObject _holder;
-        private Transform _cam;
+        private Vector3 _smooth;        // smoothed (pitch, yaw, roll) offset, degrees
+        private bool _tracking;
         private float _nextLog;
+
+        // ------------------------------------------------------------- camera state
+        private Transform _holder;
+        private Transform _cam;
+        private float _nextResolve;
+
+        private Transform _appliedCam;  // the transform that currently carries H
+        private Quaternion _applied = Quaternion.identity;
+        private bool _hasOffset;
 
         private void OnEnable()
         {
-            ModConfig.SettingsChanged += OnSettingsChanged;
-            OnSettingsChanged();
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         private void OnDisable()
         {
-            ModConfig.SettingsChanged -= OnSettingsChanged;
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            // Runner disabled/destroyed (scene sweep, re-creation, quit): hand the
+            // camera back and release the socket/mapping.
+            RemoveOffset();
             DisposeInput();
+            _source = SourceNone;
         }
 
-        private void OnSettingsChanged()
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            // The input provider lives and dies with the mode (and UDP port); the
-            // camera refs are dropped because scene loads reparent/rebuild the
-            // player hierarchy.
-            _holder = null;
-            _cam = null;
-            if (_inputMode != HeadTrackingSettings.InputMode)
-            {
-                DisposeInput();
-                _inputMode = HeadTrackingSettings.InputMode;
-            }
-            else if (_input is OpenTrackUdp udp && udp.Port != HeadTrackingSettings.UdpPort)
-            {
-                DisposeInput();
-            }
+            // New scene, likely a new player hierarchy: look for it right away
+            // instead of waiting out the resolve throttle.
+            _nextResolve = 0f;
         }
+
+        // =================================================================== Update
 
         private void Update()
         {
-            // Toggle key switches the master switch (persisted via config).
             if (HeadTrackingSettings.ToggleKey != KeyCode.None
                 && UnityEngine.Input.GetKeyDown(HeadTrackingSettings.ToggleKey))
             {
@@ -75,26 +104,24 @@ namespace ApocalypterHeadTracking.Runtime
 
             if (!HeadTrackingSettings.Enabled)
             {
-                if (_offsetActive)
-                {
-                    // Hand the camera back: identity offset next LateUpdate.
-                    _lastApplied = Quaternion.identity;
-                    _offsetActive = false;
-                }
+                // LateUpdate strips the offset; re-enabling eases in from zero.
+                _smooth = Vector3.zero;
+                _tracking = false;
                 Status = "off";
                 return;
             }
 
+            SyncSource();
+
             HeadPose raw;
             if (!TryReadPose(out raw))
             {
-                Status = "waiting";
-                // Decay the offset back to zero so the camera returns gently.
+                _tracking = false;
+                Status = _inputError ?? "waiting for tracker";
                 MoveTowardZero();
                 return;
             }
 
-            // Recenter: hold-this-pose neutral.
             if (HeadTrackingSettings.RecenterKey != KeyCode.None
                 && UnityEngine.Input.GetKeyDown(HeadTrackingSettings.RecenterKey))
             {
@@ -102,9 +129,10 @@ namespace ApocalypterHeadTracking.Runtime
                 _haveCenter = true;
             }
 
-            float yaw = raw.Yaw - (_haveCenter ? _center.Yaw : 0f);
-            float pitch = raw.Pitch - (_haveCenter ? _center.Pitch : 0f);
-            float roll = raw.Roll - (_haveCenter ? _center.Roll : 0f);
+            // DeltaAngle: a center near ±180 must not produce a 360° jump.
+            float yaw = _haveCenter ? Mathf.DeltaAngle(_center.Yaw, raw.Yaw) : raw.Yaw;
+            float pitch = _haveCenter ? Mathf.DeltaAngle(_center.Pitch, raw.Pitch) : raw.Pitch;
+            float roll = _haveCenter ? Mathf.DeltaAngle(_center.Roll, raw.Roll) : raw.Roll;
 
             float targetYaw = yaw * HeadTrackingSettings.SensitivityYaw * (HeadTrackingSettings.InvertYaw ? -1f : 1f);
             float targetPitch = pitch * HeadTrackingSettings.SensitivityPitch * (HeadTrackingSettings.InvertPitch ? -1f : 1f);
@@ -113,12 +141,18 @@ namespace ApocalypterHeadTracking.Runtime
             targetPitch = Mathf.Clamp(targetPitch, -maxPitch, maxPitch);
 
             Vector3 target = new Vector3(targetPitch, targetYaw, targetRoll);
-            // Smoothing 0 = instant, 1 = slowest: exponential approach with a
-            // time constant of Smoothing * 0.5 s.
+            // Exponential approach, time constant Smoothing * 0.5 s (0 = instant).
             float tau = HeadTrackingSettings.Smoothing * 0.5f;
             float k = tau <= 0.0001f ? 1f : 1f - Mathf.Exp(-Time.unscaledDeltaTime / tau);
             _smooth = Vector3.Lerp(_smooth, target, k);
+            if (!IsFinite(_smooth))
+            {
+                // Belt and braces: readers reject NaN/Inf, but a NaN here would
+                // poison the smoother — and the camera — forever.
+                _smooth = Vector3.zero;
+            }
 
+            _tracking = true;
             DisplayYaw = _smooth.y;
             DisplayPitch = _smooth.x;
             Status = "tracking";
@@ -126,36 +160,88 @@ namespace ApocalypterHeadTracking.Runtime
             if (HeadTrackingSettings.LogPose && Time.unscaledTime >= _nextLog)
             {
                 _nextLog = Time.unscaledTime + 1f;
-                Plugin.Log.LogInfo("Pose raw yaw=" + raw.Yaw.ToString("0.0")
-                    + " pitch=" + raw.Pitch.ToString("0.0")
+                Plugin.Log.LogInfo("Pose [" + (_input != null ? _input.ModeName : "simulated")
+                    + " frame " + raw.Frame + "] normalized deg (+yaw right, +pitch down, +roll left): yaw="
+                    + raw.Yaw.ToString("0.0") + " pitch=" + raw.Pitch.ToString("0.0")
                     + " roll=" + raw.Roll.ToString("0.0")
-                    + " x=" + raw.X.ToString("0.0") + " y=" + raw.Y.ToString("0.0") + " z=" + raw.Z.ToString("0.0"));
+                    + "  cm x=" + raw.X.ToString("0.0") + " y=" + raw.Y.ToString("0.0") + " z=" + raw.Z.ToString("0.0")
+                    + "  -> offset pitch=" + _smooth.x.ToString("0.0") + " yaw=" + _smooth.y.ToString("0.0"));
             }
+        }
+
+        /// <summary>Input source follows the settings by polling (cheap int compares)
+        /// rather than by SettingsChanged callbacks, so a live config edit can never
+        /// interleave with a half-updated runtime. A source change drops the
+        /// recenter neutral: FreeTrack, UDP and simulated poses do not share one.</summary>
+        private void SyncSource()
+        {
+            int wanted = HeadTrackingSettings.SimulateInput ? SourceSimulated
+                : (HeadTrackingSettings.InputMode == HeadTrackingSettings.InputOpenTrackUdp
+                    ? HeadTrackingSettings.InputOpenTrackUdp : HeadTrackingSettings.InputFreeTrack);
+            int port = HeadTrackingSettings.UdpPort;
+            bool portChanged = wanted == HeadTrackingSettings.InputOpenTrackUdp && port != _sourcePort;
+            if (wanted == _source && !portChanged)
+            {
+                return;
+            }
+            DisposeInput();
+            _source = wanted;
+            _sourcePort = port;
+            _haveCenter = false;
+            _inputError = null;
+            _inputErrorLogged = false;
+            _inputRetryAt = 0f;
         }
 
         private void MoveTowardZero()
         {
             float k = 1f - Mathf.Exp(-Time.unscaledDeltaTime * 5f);
             _smooth = Vector3.Lerp(_smooth, Vector3.zero, k);
+            DisplayYaw = _smooth.y;
+            DisplayPitch = _smooth.x;
         }
 
         private bool TryReadPose(out HeadPose pose)
         {
-            if (HeadTrackingSettings.SimulateInput)
+            if (_source == SourceSimulated)
             {
                 return TryReadSimulated(out pose);
             }
             pose = default(HeadPose);
             if (_input == null)
             {
-                _input = HeadTrackingSettings.InputMode == HeadTrackingSettings.InputOpenTrackUdp
-                    ? (ITrackerInput)new OpenTrackUdp(HeadTrackingSettings.UdpPort)
-                    : new FreeTrackPipe();
+                if (Time.unscaledTime < _inputRetryAt)
+                {
+                    return false;
+                }
+                try
+                {
+                    _input = _source == HeadTrackingSettings.InputOpenTrackUdp
+                        ? (ITrackerInput)new OpenTrackUdp(_sourcePort)
+                        : new FreeTrackPipe();
+                    _inputError = null;
+                }
+                catch (Exception e)
+                {
+                    // Typically "port already in use". Without this catch the
+                    // exception escaped Update every frame and the source was
+                    // re-constructed (and failed) 60 times a second.
+                    _inputRetryAt = Time.unscaledTime + InputRetryInterval;
+                    _inputError = "UDP port " + _sourcePort + " unavailable";
+                    if (!_inputErrorLogged)
+                    {
+                        _inputErrorLogged = true;
+                        Plugin.Log.LogWarning("Cannot listen on UDP port " + _sourcePort + ": " + e.Message
+                            + " (another program uses it?). Retrying every " + InputRetryInterval + " s.");
+                    }
+                    return false;
+                }
             }
             return _input.TryGetPose(out pose);
         }
 
-        // [Debug] SimulateInput: numpad-driven fake head (no tracker hardware).
+        // [Debug] SimulateInput: numpad-driven fake head, normalized convention
+        // (+yaw right, +pitch down).
         private float _simYaw;
         private float _simPitch;
 
@@ -173,24 +259,20 @@ namespace ApocalypterHeadTracking.Runtime
             }
             if (UnityEngine.Input.GetKey(KeyCode.Keypad8))
             {
-                _simPitch += DegPerSec * dt;
+                _simPitch -= DegPerSec * dt;   // up
             }
             if (UnityEngine.Input.GetKey(KeyCode.Keypad2))
             {
-                _simPitch -= DegPerSec * dt;
+                _simPitch += DegPerSec * dt;   // down
             }
             if (UnityEngine.Input.GetKeyDown(KeyCode.Keypad5))
             {
                 _simYaw = 0f;
                 _simPitch = 0f;
             }
-            pose = new HeadPose
-            {
-                Yaw = _simYaw,
-                Pitch = _simPitch,
-                Roll = 0f,
-                Valid = true
-            };
+            _simYaw = Mathf.Clamp(_simYaw, -180f, 180f);
+            _simPitch = Mathf.Clamp(_simPitch, -90f, 90f);
+            pose = new HeadPose { Yaw = _simYaw, Pitch = _simPitch, Valid = true };
             return true;
         }
 
@@ -203,63 +285,117 @@ namespace ApocalypterHeadTracking.Runtime
             }
         }
 
+        // =============================================================== LateUpdate
+
         private void LateUpdate()
         {
             if (!HeadTrackingSettings.Enabled)
             {
-                return;
-            }
-            ResolveCamera();
-            if (_cam == null || !_cam.gameObject.activeInHierarchy)
-            {
-                // 3rd person / menu / no camera: nothing to rotate, and next time
-                // the camera reappears the base is recomputed from scratch.
-                _lastApplied = Quaternion.identity;
-                _offsetActive = false;
+                RemoveOffset();
+                CameraActive = false;
                 return;
             }
 
-            Quaternion offset = Quaternion.Euler(_smooth.x, _smooth.y, _smooth.z);
-            if (!_offsetActive && offset == Quaternion.identity)
+            Transform cam = ResolveCamera();
+            if (cam == null || !cam.gameObject.activeInHierarchy)
             {
+                // 3rd person / menu / no player: hand the camera back NOW, so it
+                // re-activates exactly as the game left it.
+                RemoveOffset();
+                CameraActive = false;
                 return;
             }
-            // Additive: strip our previous offset to get the base the rest of the
-            // game produced this frame (mouse look, head bob, ...), then re-apply.
-            Quaternion baseLocal = _cam.localRotation * Quaternion.Inverse(_lastApplied);
-            _cam.localRotation = baseLocal * offset;
-            _lastApplied = offset;
-            _offsetActive = true;
+            CameraActive = true;
+
+            if (cam != _appliedCam)
+            {
+                RemoveOffset();   // a different camera than the one carrying H
+            }
+
+            if (!_tracking && _smooth.sqrMagnitude < 1e-4f)
+            {
+                // Tracker gone and the offset has decayed: stop touching the camera.
+                _smooth = Vector3.zero;
+                RemoveOffset();
+                return;
+            }
+
+            Quaternion h = ComputeOffset();
+            Quaternion vanilla = _hasOffset
+                ? Quaternion.Inverse(_applied) * cam.localRotation
+                : cam.localRotation;
+            cam.localRotation = h * vanilla;
+            _applied = h;
+            _appliedCam = cam;
+            _hasOffset = true;
         }
 
-        private void ResolveCamera()
+        /// <summary>
+        /// Head offset in the holder's frame, built so yaw turns about the holder's
+        /// PARENT up axis (body/vehicle up), not about the mouse-pitched camera up.
+        /// Holder local = Ry(hy)·Rx(hp) (MouseLook writes (x, y, 0)); the wanted
+        /// camera = Ry(hy+yaw)·Rx(hp+pitch)·Rz(roll); so the child offset is
+        ///   holder⁻¹ · wanted = Rx(−hp) · Ry(yaw) · Rx(hp+pitch) · Rz(roll).
+        /// For yaw = 0 this is exactly the old Rx(pitch)·Rz(roll). Without it, a head
+        /// turn while looking down with the mouse rolled the horizon. Total pitch
+        /// (mouse + head) is clamped to ±89° so the view never flips over the pole.
+        /// Reads the holder rotation only; MouseLook has written it in Update.
+        /// </summary>
+        private Quaternion ComputeOffset()
         {
-            if (_cam != null && _cam.gameObject.activeInHierarchy)
+            float hp = _holder != null ? Mathf.DeltaAngle(0f, _holder.localEulerAngles.x) : 0f;
+            float pitch = Mathf.Clamp(_smooth.x, -TotalPitchLimit - hp, TotalPitchLimit - hp);
+            return Quaternion.Euler(-hp, 0f, 0f) * Quaternion.Euler(hp + pitch, _smooth.y, _smooth.z);
+        }
+
+        /// <summary>Strip H from the camera that carries it (if it still exists).
+        /// Writing an INACTIVE PlayerCamera here only restores the game's own value;
+        /// the vehicle 3rdCamera is a different object and is never touched.</summary>
+        private void RemoveOffset()
+        {
+            if (_hasOffset && _appliedCam != null)
             {
-                return;
+                _appliedCam.localRotation = Quaternion.Inverse(_applied) * _appliedCam.localRotation;
             }
-            if (_holder == null)
+            _hasOffset = false;
+            _applied = Quaternion.identity;
+            _appliedCam = null;
+        }
+
+        /// <summary>Cached PlayerCamera; re-found (throttled) when destroyed, when
+        /// no longer under the holder, or while inactive (a respawn may build a new
+        /// player while the old camera lingers inactive). Never a per-frame
+        /// GameObject.Find.</summary>
+        private Transform ResolveCamera()
+        {
+            bool valid = _cam != null && _holder != null && _cam.parent == _holder;
+            if (valid && _cam.gameObject.activeInHierarchy)
             {
-                _holder = GameObject.Find("PlayerCameraHolder");
-                if (_holder == null)
+                return _cam;
+            }
+            float now = Time.unscaledTime;
+            if (now >= _nextResolve)
+            {
+                _nextResolve = now + ResolveInterval;
+                GameObject h = GameObject.Find(HolderName);
+                if (h != null)
                 {
-                    return;
+                    Transform c = h.transform.Find(CameraName);
+                    if (c != null)
+                    {
+                        _holder = h.transform;
+                        _cam = c;
+                        valid = true;
+                    }
                 }
             }
-            Transform t = _holder.transform.Find("PlayerCamera");
-            if (t == null)
-            {
-                // Not found under the holder (FloatingOrigin reparent, early scene
-                // state): drop the ref and resolve again next frame.
-                _holder = null;
-                return;
-            }
-            _cam = t;
+            return valid ? _cam : null;
         }
 
-        private void OnDestroy()
+        private static bool IsFinite(Vector3 v)
         {
-            DisposeInput();
+            return !(float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsNaN(v.z)
+                || float.IsInfinity(v.x) || float.IsInfinity(v.y) || float.IsInfinity(v.z));
         }
     }
 }

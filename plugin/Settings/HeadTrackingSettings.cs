@@ -14,14 +14,15 @@ namespace ApocalypterHeadTracking.Settings
 
         public static bool Enabled = true;
         public static int InputMode = InputFreeTrack;
-        public static int UdpPort = 4242;
-        public static float SensitivityYaw = 1f;
-        public static float SensitivityPitch = 1f;
+        public static int UdpPort = Limits.PortDefault;
+        // Pre-load values mirror the config defaults (Limits) — 0.1.0 had 1f here.
+        public static float SensitivityYaw = Limits.SensDefault;
+        public static float SensitivityPitch = Limits.SensDefault;
         public static float SensitivityRoll = 0f;   // roll off by default
         public static bool InvertYaw = false;
         public static bool InvertPitch = false;
-        public static float Smoothing = 0.5f;
-        public static float MaxPitch = 80f;
+        public static float Smoothing = Limits.SmoothDefault;
+        public static float MaxPitch = Limits.MaxPitchDefault;
         public static KeyCode RecenterKey = KeyCode.F8;
         public static KeyCode ToggleKey = KeyCode.None;
         public static bool ShowHud = true;
