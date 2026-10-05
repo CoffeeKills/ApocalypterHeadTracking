@@ -139,6 +139,10 @@ namespace ApocalypterHeadTracking.Runtime
 
         private bool TryReadPose(out HeadPose pose)
         {
+            if (HeadTrackingSettings.SimulateInput)
+            {
+                return TryReadSimulated(out pose);
+            }
             pose = default(HeadPose);
             if (_input == null)
             {
@@ -147,6 +151,45 @@ namespace ApocalypterHeadTracking.Runtime
                     : new FreeTrackPipe();
             }
             return _input.TryGetPose(out pose);
+        }
+
+        // [Debug] SimulateInput: numpad-driven fake head (no tracker hardware).
+        private float _simYaw;
+        private float _simPitch;
+
+        private bool TryReadSimulated(out HeadPose pose)
+        {
+            const float DegPerSec = 30f;
+            float dt = Time.unscaledDeltaTime;
+            if (UnityEngine.Input.GetKey(KeyCode.Keypad4))
+            {
+                _simYaw -= DegPerSec * dt;
+            }
+            if (UnityEngine.Input.GetKey(KeyCode.Keypad6))
+            {
+                _simYaw += DegPerSec * dt;
+            }
+            if (UnityEngine.Input.GetKey(KeyCode.Keypad8))
+            {
+                _simPitch += DegPerSec * dt;
+            }
+            if (UnityEngine.Input.GetKey(KeyCode.Keypad2))
+            {
+                _simPitch -= DegPerSec * dt;
+            }
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Keypad5))
+            {
+                _simYaw = 0f;
+                _simPitch = 0f;
+            }
+            pose = new HeadPose
+            {
+                Yaw = _simYaw,
+                Pitch = _simPitch,
+                Roll = 0f,
+                Valid = true
+            };
+            return true;
         }
 
         private void DisposeInput()

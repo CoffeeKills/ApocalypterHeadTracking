@@ -24,8 +24,9 @@ namespace ApocalypterHeadTracking.Runtime
             {
                 return;
             }
-            string line = "Head Tracking: " + _runtime.Status;
-            if (_runtime.Status == "tracking")
+            string state = HeadTrackingSettings.SimulateInput ? "simulated" : _runtime.Status;
+            string line = "Head Tracking: " + state;
+            if (state != "off" && state != "waiting")
             {
                 line += "  yaw " + _runtime.DisplayYaw.ToString("0.0")
                     + " pitch " + _runtime.DisplayPitch.ToString("0.0");

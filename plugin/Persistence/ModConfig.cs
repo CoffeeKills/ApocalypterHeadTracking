@@ -28,6 +28,7 @@ namespace ApocalypterHeadTracking.Persistence
         private static ConfigEntry<KeyboardShortcut> _recenterKey, _toggleKey;
         private static ConfigEntry<bool> _showHud;
         private static ConfigEntry<bool> _logPose;
+        private static ConfigEntry<bool> _simulateInput;
         // Read by Apocasetter via Chainloader (not wired to SettingsChanged — we never read it).
         private static ConfigEntry<bool> _apocasetter;
 
@@ -81,6 +82,9 @@ namespace ApocalypterHeadTracking.Persistence
                 "Show the small status line (input source, tracking state, live yaw/pitch).");
             _logPose = config.Bind("Debug", "LogPose", false,
                 "Log the raw tracker values once per second (protocol verification).");
+            _simulateInput = config.Bind("Debug", "SimulateInput", false,
+                "Feed a simulated head pose from the numpad instead of a tracker "
+                + "(testing without hardware): Numpad 4/6 yaw, 8/2 pitch, Numpad5 zero.");
             _apocasetter = config.Bind("General", "Apocasetter", true,
                 "Show this mod in the Apocasetter Mods menu (requires Apocasetter installed).");
 
@@ -116,6 +120,7 @@ namespace ApocalypterHeadTracking.Persistence
             Wire(_toggleKey);
             Wire(_showHud);
             Wire(_logPose);
+            Wire(_simulateInput);
         }
 
         private static void Wire<T>(ConfigEntry<T> entry)
@@ -168,6 +173,7 @@ namespace ApocalypterHeadTracking.Persistence
             HeadTrackingSettings.ToggleKey = _toggleKey.Value.MainKey;
             HeadTrackingSettings.ShowHud = _showHud.Value;
             HeadTrackingSettings.LogPose = _logPose.Value;
+            HeadTrackingSettings.SimulateInput = _simulateInput.Value;
         }
     }
 }
