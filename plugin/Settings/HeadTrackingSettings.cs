@@ -19,6 +19,9 @@ namespace ApocalypterHeadTracking.Settings
         public static float SensitivityYaw = Limits.SensDefault;
         public static float SensitivityPitch = Limits.SensDefault;
         public static float SensitivityRoll = 0f;   // roll off by default
+        public static float SensitivityX = Limits.TransDefault;   // pan (sideways)
+        public static float SensitivityY = Limits.TransDefault;   // height
+        public static float SensitivityZ = Limits.TransDefault;   // forward/back
         public static bool InvertYaw = false;
         public static bool InvertPitch = false;
         public static float Smoothing = Limits.SmoothDefault;

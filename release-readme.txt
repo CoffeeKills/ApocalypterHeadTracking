@@ -1,4 +1,4 @@
-Apocalypter Head Tracking v0.1.1-alpha
+Apocalypter Head Tracking v0.1.2-alpha
 ======================================
 
 Headtracking for Apocalypter's first-person view via OpenTrack.
@@ -26,6 +26,12 @@ Install
 -------
 Copy ApocalypterHeadTracking.dll and ApocalypterHeadTracking.png into
 BepInEx\plugins\ while the game is closed.
+
+What's new in 0.1.2
+-------------------
+- Head translation: sideways pan, height and forward/back lean now move the camera
+  (SensitivityX/Y/Z, default 0.5, 0 = off).
+- Numpad simulation: 7/9 roll, 1/3 pan.
 
 What's new in 0.1.1
 -------------------

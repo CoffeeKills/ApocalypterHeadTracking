@@ -64,12 +64,13 @@ def make_mmf_writer():
 
     frame = [1]
 
-    def write(yaw, pitch, roll):
-        # Arguments: OpenTrack internal pose (deg). Encode like proto-ft pose().
+    def write(yaw, pitch, roll, tx=0.0, ty=0.0, tz=0.0):
+        # Arguments: OpenTrack internal pose (deg, cm). Encode like proto-ft pose():
+        # radians with yaw/pitch negated, translations *10 (cm -> mm).
         d2r = math.pi / 180.0
         frame[0] = (frame[0] + 1) & 0xFFFFFFFF
         struct.pack_into("<ffffff", buf, 12, -yaw * d2r, -pitch * d2r, roll * d2r,
-                         0.0, 0.0, 0.0)
+                         tx * 10.0, ty * 10.0, tz * 10.0)
         struct.pack_into("<I", buf, 0, frame[0])  # DataID ticks every pose() call
 
     return write
@@ -89,16 +90,19 @@ def main():
     print("Simulated headtracking: FreeTrack={} UDP={}  ({} Hz)".format(
         bool(mmf), bool(udp), RATE))
     print("CLICK THIS WINDOW FIRST — keys only reach this console while it is focused.")
-    print("Arrows = yaw/pitch  Q/E = roll  +/- = step  C = center  A = auto-sway demo")
-    print("H = hold still  F = freeze tracker  N = one NaN frame  Esc = quit")
+    print("Arrows = yaw/pitch  Q/E = roll  Z/X = pan  R/V = height  T/G = depth  +/- = step")
+    print("C = center  A = auto-sway demo  H = hold still  F = freeze tracker  N = one NaN frame  Esc = quit")
     print("Starts still — hold the arrows to move the camera; press A for automatic sway.")
     print("If the in-game HUD shows 'tracking' and the camera moves, the mod works.")
     print()
 
-    # Operator intent: yaw +right, pitch +UP, roll +left (converted below).
+    # Operator intent: yaw +right, pitch +UP, roll +left, x +right, y +up, z +forward
+    # (cm). Converted to OpenTrack's internal convention below.
     yaw = pitch = roll = 0.0
+    tx = ty = tz = 0.0
     hold = freeze = nan_once = False
     step = 2.0
+    step_cm = 5.0
     auto = False
     t0 = time.time()
     frame = 0
@@ -134,6 +138,7 @@ def main():
                     nan_once = True
                 elif ch in ("c", "C"):
                     yaw = pitch = roll = 0.0
+                    tx = ty = tz = 0.0
                     print("centered")
                 elif ch == "+":
                     step = min(step + 1.0, 20.0)
@@ -144,6 +149,24 @@ def main():
                     pressed = True
                 elif ch in ("e", "E"):
                     roll -= step
+                    pressed = True
+                elif ch in ("z", "Z"):
+                    tx -= step_cm
+                    pressed = True
+                elif ch in ("x", "X"):
+                    tx += step_cm
+                    pressed = True
+                elif ch in ("r", "R"):
+                    ty += step_cm
+                    pressed = True
+                elif ch in ("v", "V"):
+                    ty -= step_cm
+                    pressed = True
+                elif ch in ("t", "T"):
+                    tz += step_cm
+                    pressed = True
+                elif ch in ("g", "G"):
+                    tz -= step_cm
                     pressed = True
 
             t = time.time() - t0
@@ -159,8 +182,12 @@ def main():
                 yaw *= 1.0 - decay
                 pitch *= 1.0 - decay
                 roll *= 1.0 - decay
+                tx *= 1.0 - decay
+                ty *= 1.0 - decay
+                tz *= 1.0 - decay
 
-            # Intent -> OpenTrack internal convention (pitch +down).
+            # Intent -> OpenTrack internal convention (pitch +down; translations
+            # stay cm; the FreeTrack encoder converts cm to mm and radians).
             ot_yaw, ot_pitch, ot_roll = yaw, -pitch, roll
             if nan_once:
                 ot_roll = float("nan")
@@ -168,15 +195,15 @@ def main():
                 print("sent one NaN frame (the mod must ignore it)")
             if not freeze:
                 if mmf:
-                    mmf(ot_yaw, ot_pitch, ot_roll)
+                    mmf(ot_yaw, ot_pitch, ot_roll, tx, ty, tz)
                 if udp:
-                    packet = struct.pack("<6d", 0.0, 0.0, 0.0, ot_yaw, ot_pitch, ot_roll)
+                    packet = struct.pack("<6d", tx, ty, tz, ot_yaw, ot_pitch, ot_roll)
                     udp.sendto(packet, (UDP_HOST, UDP_PORT))
 
             frame += 1
             if frame % 10 == 0:
-                sys.stdout.write("\ryaw {:6.1f}  pitch {:6.1f}  roll {:6.1f}  step {:.1f}   "
-                                 .format(yaw, pitch, roll, step))
+                sys.stdout.write("\ryaw {:6.1f}  pitch {:6.1f}  roll {:6.1f}  x {:5.1f}  y {:5.1f}  z {:5.1f}  step {:.1f}   "
+                                 .format(yaw, pitch, roll, tx, ty, tz, step))
                 sys.stdout.flush()
             time.sleep(1.0 / RATE)
     except KeyboardInterrupt:

@@ -44,6 +44,7 @@ first run) and in the Apocasetter Mods menu:
 | `UdpPort` | 4242 | 1–65535 | UDP listen port (OpenTrack UDP mode). |
 | `SensitivityYaw` / `SensitivityPitch` | 0.5 | 0–3 | Camera degrees per head degree (0.5× default: real head movement is small). |
 | `SensitivityRoll` | 0 | 0–3 | Roll response (0 = off). |
+| `SensitivityX` / `SensitivityY` / `SensitivityZ` | 0.5 | 0–3 | Camera cm per tracked cm of head translation: X = pan/lean sideways, Y = height, Z = forward/back. |
 | `InvertYaw` / `InvertPitch` | false | bool | Flip direction. |
 | `Smoothing` | 0.5 | 0–0.95 | Higher = the camera follows more slowly and smoothly (0 = instant). |
 | `MaxPitch` | 80 | 0–180 | Head-pitch clamp, degrees. Mouse + head pitch is also kept within ±89°. |
@@ -102,6 +103,17 @@ Install: copy `plugin\bin\Release\netstandard2.0\ApocalypterHeadTracking.dll` an
 game is closed** (the game locks the DLL while running).
 
 ## Changes
+
+### Changes in 0.1.2-alpha
+
+- **Head translation (pan/lean)**: the tracker's X/Y/Z (cm) now move the camera in
+  its local frame — X sideways (pan), Y up/down, Z forward/back — smoothed like the
+  rotation and stripped exactly on every hand-back path (CameraMovementPro adds its
+  shake delta each frame, and additions commute). New config keys `SensitivityX/Y/Z`
+  (default 0.5 cm per cm, 0 = off), clamped to ±50 cm.
+- Numpad simulation gained roll (7/9) and pan (1/3); the test rig gained Z/X, R/V,
+  T/G translation keys and now encodes translations like OpenTrack.
+- LogPose also prints the applied translation offset.
 
 ### Changes in 0.1.1-alpha
 

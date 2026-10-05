@@ -18,9 +18,11 @@ Version 0.1.1-alpha (audit). **[0.1.1]** marks items changed in this release.
       disable, scene load, runner destroyed, tracker decayed).
 - [x] Per-axis sensitivity, invert, pitch clamp, roll (off by default).
       **[0.1.1]** Yaw turns about the body/vehicle up axis (no horizon roll),
-      mouse + head pitch held within ±89°.
+      mouse + head pitch held within ±89°. **[0.1.2]** Head translation: X/Y/Z cm
+      move the camera in its local frame (pan/height/forward-back), smoothed and
+      stripped exactly, clamped ±50 cm, new SensitivityX/Y/Z keys (default 0.5).
 - [x] Smoothing (exponential, configurable). **[0.1.1]** Non-finite reset, eases
-      in from zero after re-enable.
+      in from zero after re-enable. **[0.1.2]** Smooths translation too.
 - [x] Recenter key (F8) + optional toggle key. **[0.1.1]** The neutral resets on a
       source change, DeltaAngle recenter, the toggle saves once.
 - [x] Status HUD (IMGUI, source/state/live yaw-pitch). **[0.1.1]** 10 Hz rebuild,
@@ -30,9 +32,13 @@ Version 0.1.1-alpha (audit). **[0.1.1]** marks items changed in this release.
 - [x] `[Debug] LogPose` raw-value logging for protocol verification. **[0.1.1]**
       Normalized degrees + DataID/packet counter + applied offset.
 - [x] `[Debug] SimulateInput` numpad fake head. **[0.1.1]** Numpad 8 = up.
+      **[0.1.2]** Numpad 7/9 roll, 1/3 pan.
 - [x] `tools/test-headpose.py` simulated tracker. **[0.1.1]** Encodes exactly like
       OpenTrack; H/F/N keys for the still-head, tracker-stop and NaN cases.
-- [ ] Head translation (x/y/z lean) — not planned for v1 (rotation only)
+      **[0.1.2]** Z/X, R/V, T/G translation keys; translations encoded like
+      OpenTrack.
+- [ ] Head translation (x/y/z lean) — **[0.1.2] shipped: rotation + translation.
+      Removed from the not-planned list.**
 - [ ] Verify harness: not planned for v1 (lite-mod precedent). The 0.1.1 audit
       checked the readers and camera math off-tree (Mono + API stubs, a quaternion
       simulation; see docs/audit-0.1.1.md). Live confirmation with a real OpenTrack

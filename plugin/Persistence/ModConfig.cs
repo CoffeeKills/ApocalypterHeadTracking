@@ -21,7 +21,7 @@ namespace ApocalypterHeadTracking.Persistence
         private static ConfigEntry<bool> _enabled;
         private static ConfigEntry<int> _inputMode;
         private static ConfigEntry<int> _udpPort;
-        private static ConfigEntry<float> _sensYaw, _sensPitch, _sensRoll;
+        private static ConfigEntry<float> _sensYaw, _sensPitch, _sensRoll, _sensX, _sensY, _sensZ;
         private static ConfigEntry<bool> _invertYaw, _invertPitch;
         private static ConfigEntry<float> _smoothing;
         private static ConfigEntry<float> _maxPitch;
@@ -73,6 +73,12 @@ namespace ApocalypterHeadTracking.Persistence
                 "How many degrees the camera turns per degree of head pitch.");
             _sensRoll = BindRange("HeadTracking", "SensitivityRoll", 0f, Limits.SensMin, Limits.SensMax,
                 "How many degrees the camera rolls per degree of head roll (0 = off).");
+            _sensX = BindRange("HeadTracking", "SensitivityX", Limits.TransDefault, Limits.SensMin, Limits.SensMax,
+                "Camera centimetres per tracked centimetre of sideways head movement (pan/lean).");
+            _sensY = BindRange("HeadTracking", "SensitivityY", Limits.TransDefault, Limits.SensMin, Limits.SensMax,
+                "Camera centimetres per tracked centimetre of vertical head movement.");
+            _sensZ = BindRange("HeadTracking", "SensitivityZ", Limits.TransDefault, Limits.SensMin, Limits.SensMax,
+                "Camera centimetres per tracked centimetre of forward/back head movement.");
             _invertYaw = config.Bind("HeadTracking", "InvertYaw", false,
                 "Flip the yaw direction.");
             _invertPitch = config.Bind("HeadTracking", "InvertPitch", false,
@@ -121,6 +127,9 @@ namespace ApocalypterHeadTracking.Persistence
             Wire(_sensYaw);
             Wire(_sensPitch);
             Wire(_sensRoll);
+            Wire(_sensX);
+            Wire(_sensY);
+            Wire(_sensZ);
             Wire(_invertYaw);
             Wire(_invertPitch);
             Wire(_smoothing);
@@ -174,6 +183,9 @@ namespace ApocalypterHeadTracking.Persistence
             HeadTrackingSettings.SensitivityYaw = _sensYaw.Value;
             HeadTrackingSettings.SensitivityPitch = _sensPitch.Value;
             HeadTrackingSettings.SensitivityRoll = _sensRoll.Value;
+            HeadTrackingSettings.SensitivityX = _sensX.Value;
+            HeadTrackingSettings.SensitivityY = _sensY.Value;
+            HeadTrackingSettings.SensitivityZ = _sensZ.Value;
             HeadTrackingSettings.InvertYaw = _invertYaw.Value;
             HeadTrackingSettings.InvertPitch = _invertPitch.Value;
             HeadTrackingSettings.Smoothing = _smoothing.Value;
