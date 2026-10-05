@@ -154,9 +154,9 @@ namespace ApocalypterHeadTracking.Runtime
 
             Vector3 target = new Vector3(targetPitch, targetYaw, targetRoll);
             Vector3 targetPos = new Vector3(
-                dx * HeadTrackingSettings.SensitivityX,
-                dy * HeadTrackingSettings.SensitivityY,
-                dz * HeadTrackingSettings.SensitivityZ);
+                dx * HeadTrackingSettings.SensitivityX * (HeadTrackingSettings.InvertX ? -1f : 1f),
+                dy * HeadTrackingSettings.SensitivityY * (HeadTrackingSettings.InvertY ? -1f : 1f),
+                dz * HeadTrackingSettings.SensitivityZ * (HeadTrackingSettings.InvertZ ? -1f : 1f));
             // Exponential approach, time constant Smoothing * 0.5 s (0 = instant).
             float tau = HeadTrackingSettings.Smoothing * 0.5f;
             float k = tau <= 0.0001f ? 1f : 1f - Mathf.Exp(-Time.unscaledDeltaTime / tau);

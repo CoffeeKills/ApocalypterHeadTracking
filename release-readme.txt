@@ -1,4 +1,4 @@
-Apocalypter Head Tracking v0.1.2-alpha
+Apocalypter Head Tracking v0.1.3-alpha
 ======================================
 
 Headtracking for Apocalypter's first-person view via OpenTrack.
@@ -26,6 +26,13 @@ Install
 -------
 Copy ApocalypterHeadTracking.dll and ApocalypterHeadTracking.png into
 BepInEx\plugins\ while the game is closed.
+
+What's new in 0.1.3
+-------------------
+- Translation sensitivity defaults dropped from 0.5 to 0.01 (0.5 threw the camera
+  around on noisy webcam translation). Your existing values are kept.
+- New InvertX / InvertY / InvertZ keys: flip each translation axis in the mod menu
+  instead of in OpenTrack.
 
 What's new in 0.1.2
 -------------------

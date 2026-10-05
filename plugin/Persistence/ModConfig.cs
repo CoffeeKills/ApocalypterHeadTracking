@@ -22,7 +22,7 @@ namespace ApocalypterHeadTracking.Persistence
         private static ConfigEntry<int> _inputMode;
         private static ConfigEntry<int> _udpPort;
         private static ConfigEntry<float> _sensYaw, _sensPitch, _sensRoll, _sensX, _sensY, _sensZ;
-        private static ConfigEntry<bool> _invertYaw, _invertPitch;
+        private static ConfigEntry<bool> _invertYaw, _invertPitch, _invertX, _invertY, _invertZ;
         private static ConfigEntry<float> _smoothing;
         private static ConfigEntry<float> _maxPitch;
         private static ConfigEntry<KeyboardShortcut> _recenterKey, _toggleKey;
@@ -79,6 +79,12 @@ namespace ApocalypterHeadTracking.Persistence
                 "Camera centimetres per tracked centimetre of vertical head movement.");
             _sensZ = BindRange("HeadTracking", "SensitivityZ", Limits.TransDefault, Limits.SensMin, Limits.SensMax,
                 "Camera centimetres per tracked centimetre of forward/back head movement.");
+            _invertX = config.Bind("HeadTracking", "InvertX", false,
+                "Flip the sideways pan direction (which way the camera moves for sideways head movement).");
+            _invertY = config.Bind("HeadTracking", "InvertY", false,
+                "Flip the height direction.");
+            _invertZ = config.Bind("HeadTracking", "InvertZ", false,
+                "Flip the forward/back direction.");
             _invertYaw = config.Bind("HeadTracking", "InvertYaw", false,
                 "Flip the yaw direction.");
             _invertPitch = config.Bind("HeadTracking", "InvertPitch", false,
@@ -130,6 +136,9 @@ namespace ApocalypterHeadTracking.Persistence
             Wire(_sensX);
             Wire(_sensY);
             Wire(_sensZ);
+            Wire(_invertX);
+            Wire(_invertY);
+            Wire(_invertZ);
             Wire(_invertYaw);
             Wire(_invertPitch);
             Wire(_smoothing);
@@ -186,6 +195,9 @@ namespace ApocalypterHeadTracking.Persistence
             HeadTrackingSettings.SensitivityX = _sensX.Value;
             HeadTrackingSettings.SensitivityY = _sensY.Value;
             HeadTrackingSettings.SensitivityZ = _sensZ.Value;
+            HeadTrackingSettings.InvertX = _invertX.Value;
+            HeadTrackingSettings.InvertY = _invertY.Value;
+            HeadTrackingSettings.InvertZ = _invertZ.Value;
             HeadTrackingSettings.InvertYaw = _invertYaw.Value;
             HeadTrackingSettings.InvertPitch = _invertPitch.Value;
             HeadTrackingSettings.Smoothing = _smoothing.Value;

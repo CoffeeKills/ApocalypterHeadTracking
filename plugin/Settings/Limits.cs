@@ -9,9 +9,10 @@ namespace ApocalypterHeadTracking.Settings
         public const float SensDefault = 0.5f;   // real head movement is small: 1:1 is too much
 
         /// <summary>Translation sensitivity: camera centimetres per tracked
-        /// centimetre. Head translation is small (±5–10 cm) and webcam-tracked
-        /// translation is noisy — 0.5× is a calm default.</summary>
-        public const float TransDefault = 0.5f;
+        /// centimetre. Webcam-tracked translation is noisy and can spike, and a
+        /// few cm of camera offset reads as a lot in first person — keep the
+        /// default tiny (0.5 was far too much: first tester feedback).</summary>
+        public const float TransDefault = 0.01f;
 
         /// <summary>Largest translation offset the mod will apply (cm).</summary>
         public const float MaxTransCm = 50f;
