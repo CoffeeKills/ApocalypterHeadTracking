@@ -44,7 +44,7 @@ first run) and in the Apocasetter Mods menu:
 | `UdpPort` | 4242 | 1–65535 | UDP listen port (OpenTrack UDP mode). |
 | `SensitivityYaw` / `SensitivityPitch` | 0.5 | 0–3 | Camera degrees per head degree (0.5× default: real head movement is small). |
 | `SensitivityRoll` | 0 | 0–3 | Roll response (0 = off). |
-| `SensitivityX` / `SensitivityY` / `SensitivityZ` | 0.01 | 0–3 | Camera cm per tracked cm of head translation: X = pan/lean sideways, Y = height, Z = forward/back. Keep tiny — webcam translation is noisy. |
+| `SensitivityX` / `SensitivityY` / `SensitivityZ` | 0.01 | 0–0.05 | Camera cm per tracked cm of head translation: X = pan/lean sideways, Y = height, Z = forward/back. The slider spans the whole realistic band — no more bottoming out at 0.001. |
 | `InvertX` / `InvertY` / `InvertZ` | false | bool | Flip the translation direction per axis. |
 | `InvertYaw` / `InvertPitch` | false | bool | Flip direction. |
 | `Smoothing` | 0.5 | 0–0.95 | Higher = the camera follows more slowly and smoothly (0 = instant). |
@@ -104,6 +104,14 @@ Install: copy `plugin\bin\Release\netstandard2.0\ApocalypterHeadTracking.dll` an
 game is closed** (the game locks the DLL while running).
 
 ## Changes
+
+### Changes in 0.1.4-alpha
+
+- **Translation sensitivity slider rescale**: the X/Y/Z range is now 0–0.05 (was
+  0–3). Useful translation values live between 0.001 and 0.05, so the slider now
+  spans exactly that band with fine steps — no more bottoming out at 0.001 on a
+  0–3 scale. Existing configs keep their values (values above 0.05 are clamped to
+  0.05, which is still calmer than the old 0.5).
 
 ### Changes in 0.1.3-alpha
 

@@ -1,4 +1,4 @@
-Apocalypter Head Tracking v0.1.3-alpha
+Apocalypter Head Tracking v0.1.4-alpha
 ======================================
 
 Headtracking for Apocalypter's first-person view via OpenTrack.
@@ -26,6 +26,11 @@ Install
 -------
 Copy ApocalypterHeadTracking.dll and ApocalypterHeadTracking.png into
 BepInEx\plugins\ while the game is closed.
+
+What's new in 0.1.4
+-------------------
+- The X/Y/Z sensitivity slider now spans 0-0.05 instead of 0-3: the useful range
+  fills the whole slider with fine steps (no more bottoming out at 0.001).
 
 What's new in 0.1.3
 -------------------

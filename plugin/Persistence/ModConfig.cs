@@ -73,11 +73,11 @@ namespace ApocalypterHeadTracking.Persistence
                 "How many degrees the camera turns per degree of head pitch.");
             _sensRoll = BindRange("HeadTracking", "SensitivityRoll", 0f, Limits.SensMin, Limits.SensMax,
                 "How many degrees the camera rolls per degree of head roll (0 = off).");
-            _sensX = BindRange("HeadTracking", "SensitivityX", Limits.TransDefault, Limits.SensMin, Limits.SensMax,
+            _sensX = BindRange("HeadTracking", "SensitivityX", Limits.TransDefault, Limits.SensMin, Limits.TransMax,
                 "Camera centimetres per tracked centimetre of sideways head movement (pan/lean).");
-            _sensY = BindRange("HeadTracking", "SensitivityY", Limits.TransDefault, Limits.SensMin, Limits.SensMax,
+            _sensY = BindRange("HeadTracking", "SensitivityY", Limits.TransDefault, Limits.SensMin, Limits.TransMax,
                 "Camera centimetres per tracked centimetre of vertical head movement.");
-            _sensZ = BindRange("HeadTracking", "SensitivityZ", Limits.TransDefault, Limits.SensMin, Limits.SensMax,
+            _sensZ = BindRange("HeadTracking", "SensitivityZ", Limits.TransDefault, Limits.SensMin, Limits.TransMax,
                 "Camera centimetres per tracked centimetre of forward/back head movement.");
             _invertX = config.Bind("HeadTracking", "InvertX", false,
                 "Flip the sideways pan direction (which way the camera moves for sideways head movement).");

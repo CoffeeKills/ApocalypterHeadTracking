@@ -14,6 +14,11 @@ namespace ApocalypterHeadTracking.Settings
         /// default tiny (0.5 was far too much: first tester feedback).</summary>
         public const float TransDefault = 0.01f;
 
+        /// <summary>Translation range spans the whole REALISTIC band (0–0.05) so
+        /// the Apocasetter slider has usable precision where translation actually
+        /// lives — a 0–3 range forced testers to bottom out at 0.005.</summary>
+        public const float TransMax = 0.05f;
+
         /// <summary>Largest translation offset the mod will apply (cm).</summary>
         public const float MaxTransCm = 50f;
 

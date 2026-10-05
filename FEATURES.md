@@ -23,6 +23,8 @@ Version 0.1.1-alpha (audit). **[0.1.1]** marks items changed in this release.
       stripped exactly, clamped ±50 cm, new SensitivityX/Y/Z keys.
       **[0.1.3]** Translation defaults dropped to 0.01 (0.5 threw the camera on
       noisy webcam translation); new InvertX/InvertY/InvertZ keys.
+      **[0.1.4]** Translation slider rescale: 0–0.05 range spans the whole
+      realistic band with fine steps.
 - [x] Smoothing (exponential, configurable). **[0.1.1]** Non-finite reset, eases
       in from zero after re-enable. **[0.1.2]** Smooths translation too.
 - [x] Recenter key (F8) + optional toggle key. **[0.1.1]** The neutral resets on a
