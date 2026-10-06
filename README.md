@@ -6,6 +6,8 @@ turn your head to look around in first-person — on foot and while driving — 
 or IR clips. No mouse emulation, no game input hacks: the mod reads the tracker's
 pose directly and rotates the first-person camera additively.
 
+**Problems? Contact @OddlyTugs on Discord.**
+
 ## Features
 
 - **FreeTrack 2.0** input (OpenTrack → Output → *FreeTrack 2.0*): the standard

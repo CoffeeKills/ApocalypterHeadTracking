@@ -1,4 +1,4 @@
-Apocalypter Head Tracking v0.1.7-alpha
+Apocalypter Head Tracking v0.1.8-alpha
 ======================================
 
 Headtracking for Apocalypter's first-person view via OpenTrack.
@@ -26,6 +26,10 @@ Install
 -------
 Copy ApocalypterHeadTracking.dll and ApocalypterHeadTracking.png into
 BepInEx\plugins\ while the game is closed.
+
+What's new in 0.1.8
+-------------------
+- New icon.
 
 What's new in 0.1.7
 -------------------
