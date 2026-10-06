@@ -113,6 +113,13 @@ game is closed** (the game locks the DLL while running).
 
 ## Changes
 
+### Changes in 0.1.7-alpha
+
+- **Display name shortened to "Head Tracking"** in the Apocasetter Mods list (and
+  the BepInEx log). Every mod in the list starts with "Apocalypter", so the prefix
+  only truncated the part that tells mods apart. GUID, config file and DLL file
+  name are unchanged — nothing to migrate.
+
 ### Changes in 0.1.6-alpha
 
 Follows the 0.1.5 research recommendation (`docs/headtracking-expectations.md`):
