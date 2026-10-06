@@ -7,6 +7,6 @@ namespace ApocalypterHeadTracking
         public const string PLUGIN_NAME = "Apocalypter Head Tracking";
         // BepInEx 5 parses this with System.Version: numeric-only, no pre-release
         // tags. "-alpha" makes BepInEx skip the whole plugin at load.
-        public const string PLUGIN_VERSION = "0.1.4";
+        public const string PLUGIN_VERSION = "0.1.6";
     }
 }

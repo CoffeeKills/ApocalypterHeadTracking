@@ -6,11 +6,17 @@ namespace ApocalypterHeadTracking.Input
     ///   Yaw   degrees, positive = head turned right
     ///   Pitch degrees, positive = head tilted down
     ///   Roll  degrees, positive = head tilted left
-    ///   X/Y/Z centimetres (unused — the mod is rotation only)
+    ///   X     centimetres, positive = head moved LEFT
+    ///   Y     centimetres, positive = head moved up
+    ///   Z     centimetres, positive = head moved BACK (away from the screen)
+    /// Translation signs (0.1.5): OpenTrack's own SimConnect output negates TX and
+    /// TZ to reach MSFS's +right/+forward eyepoint axes (proto-simconnect), and the
+    /// first tester had to invert exactly X and Z under 0.1.2's unflipped mapping.
+    /// The runtime maps this to the camera as (−X, +Y, −Z).
     /// This is exactly what OpenTrack's UDP output sends; the FreeTrack reader
-    /// converts into it (see FreeTrackPipe). It also maps 1:1 onto Unity's
+    /// converts into it (see FreeTrackPipe). The rotations map 1:1 onto Unity's
     /// Quaternion.Euler(pitch, yaw, roll) on a camera: +x looks down, +y turns
-    /// right, +z rolls the view left — so the runtime applies it without sign flips.
+    /// right, +z rolls the view left — so the runtime applies them without flips.
     /// </summary>
     public struct HeadPose
     {

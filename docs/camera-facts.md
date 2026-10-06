@@ -42,7 +42,16 @@ strips exactly in either LateUpdate order. `ResetCamera()` writes an absolute
 `originalRotation` when it has no layers. No caller was found in the analysed
 data. If one exists, the mod's next strip would leave the inverse of the previous
 head offset in the transform until the next reset. That is a residual risk, listed
-in docs/audit-0.1.1.md. The non-cinemachine
+in docs/audit-0.1.1.md.
+
+Position (0.1.5): in cinemachine mode CMP likewise does
+`localPosition = cachedLocalPosition + shake`. It adds onto whatever is there and
+does not strip its previous shake, so the mod's additive translation strips
+exactly in either LateUpdate order. `PlayerCamera.localPosition` is in the
+**holder's** space: Unity metres, rotated by mouse yaw AND pitch. The mod
+converts head cm to metres and removes the mouse pitch (body frame). Absolute
+position writers on PlayerCamera (crouch, seat snap) were NOT checked in the FSM
+data; see docs/audit-0.1.5.md, residual risk 1. The non-cinemachine
 mode snaps to a cached originalRotation; if that flag is ever off, a hard conflict
 would exist (it is on in the shipped scene).
 

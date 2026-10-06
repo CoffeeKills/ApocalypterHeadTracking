@@ -58,7 +58,7 @@ namespace ApocalypterHeadTracking.Runtime
         private HeadPose _center;
         private bool _haveCenter;
         private Vector3 _smooth;        // smoothed (pitch, yaw, roll) offset, degrees
-        private Vector3 _smoothPos;     // smoothed (x, y, z) offset, centimetres
+        private Vector3 _smoothPos;     // smoothed camera translation, cm, body frame (+x right, +y up, +z forward)
         private bool _tracking;
         private float _nextLog;
 
@@ -104,6 +104,11 @@ namespace ApocalypterHeadTracking.Runtime
             {
                 ModConfig.SetEnabled(!HeadTrackingSettings.Enabled);
             }
+            if (HeadTrackingSettings.ModeKey != KeyCode.None
+                && UnityEngine.Input.GetKeyDown(HeadTrackingSettings.ModeKey))
+            {
+                ModConfig.CycleMode();
+            }
 
             if (!HeadTrackingSettings.Enabled)
             {
@@ -137,14 +142,13 @@ namespace ApocalypterHeadTracking.Runtime
             float yaw = _haveCenter ? Mathf.DeltaAngle(_center.Yaw, raw.Yaw) : raw.Yaw;
             float pitch = _haveCenter ? Mathf.DeltaAngle(_center.Pitch, raw.Pitch) : raw.Pitch;
             float roll = _haveCenter ? Mathf.DeltaAngle(_center.Roll, raw.Roll) : raw.Roll;
-            // Translations are plain offsets (cm), clamped to a sane lean range.
-            float dx = _haveCenter ? raw.X - _center.X : raw.X;
+            // Head translation relative to the neutral, OpenTrack convention
+            // (+X left, +Y up, +Z back — see HeadPose) → camera body frame
+            // (+x right, +y up, +z forward). 0.1.2–0.1.4 used X and Z unflipped,
+            // which is why testers had to invert both.
+            float dx = -(_haveCenter ? raw.X - _center.X : raw.X);
             float dy = _haveCenter ? raw.Y - _center.Y : raw.Y;
-            float dz = _haveCenter ? raw.Z - _center.Z : raw.Z;
-            float maxTrans = Limits.MaxTransCm;
-            dx = Mathf.Clamp(dx, -maxTrans, maxTrans);
-            dy = Mathf.Clamp(dy, -maxTrans, maxTrans);
-            dz = Mathf.Clamp(dz, -maxTrans, maxTrans);
+            float dz = -(_haveCenter ? raw.Z - _center.Z : raw.Z);
 
             float targetYaw = yaw * HeadTrackingSettings.SensitivityYaw * (HeadTrackingSettings.InvertYaw ? -1f : 1f);
             float targetPitch = pitch * HeadTrackingSettings.SensitivityPitch * (HeadTrackingSettings.InvertPitch ? -1f : 1f);
@@ -153,10 +157,27 @@ namespace ApocalypterHeadTracking.Runtime
             targetPitch = Mathf.Clamp(targetPitch, -maxPitch, maxPitch);
 
             Vector3 target = new Vector3(targetPitch, targetYaw, targetRoll);
+            // Camera cm, clamped AFTER sensitivity: the camera never leaves the head
+            // position by more than MaxTransCm per axis, whatever the slider says.
+            float maxTrans = Limits.MaxTransCm;
             Vector3 targetPos = new Vector3(
-                dx * HeadTrackingSettings.SensitivityX * (HeadTrackingSettings.InvertX ? -1f : 1f),
-                dy * HeadTrackingSettings.SensitivityY * (HeadTrackingSettings.InvertY ? -1f : 1f),
-                dz * HeadTrackingSettings.SensitivityZ * (HeadTrackingSettings.InvertZ ? -1f : 1f));
+                Mathf.Clamp(dx * HeadTrackingSettings.SensitivityX * (HeadTrackingSettings.InvertX ? -1f : 1f), -maxTrans, maxTrans),
+                Mathf.Clamp(dy * HeadTrackingSettings.SensitivityY * (HeadTrackingSettings.InvertY ? -1f : 1f), -maxTrans, maxTrans),
+                Mathf.Clamp(dz * HeadTrackingSettings.SensitivityZ * (HeadTrackingSettings.InvertZ ? -1f : 1f), -maxTrans, maxTrans));
+            // Mode (0.1.6) zeroes the TARGET of the switched-off part, not the applied
+            // offset: the smoother eases it out (or back in) like a recenter, and the
+            // camera write/strip path is untouched — a switched-off part simply
+            // decays to a zero offset that is still stripped exactly.
+            int mode = HeadTrackingSettings.Mode;
+            if (mode == HeadTrackingSettings.ModeRotationOnly)
+            {
+                targetPos = Vector3.zero;
+            }
+            else if (mode == HeadTrackingSettings.ModePositionOnly)
+            {
+                target = Vector3.zero;
+            }
+
             // Exponential approach, time constant Smoothing * 0.5 s (0 = instant).
             float tau = HeadTrackingSettings.Smoothing * 0.5f;
             float k = tau <= 0.0001f ? 1f : 1f - Mathf.Exp(-Time.unscaledDeltaTime / tau);
@@ -262,8 +283,8 @@ namespace ApocalypterHeadTracking.Runtime
             return _input.TryGetPose(out pose);
         }
 
-        // [Debug] SimulateInput: numpad-driven fake head, normalized convention
-        // (+yaw right, +pitch down, +roll left, +x right, +y up, +z forward).
+        // [Debug] SimulateInput: numpad-driven fake head in the HeadPose (OpenTrack)
+        // convention: +yaw right, +pitch down, +roll left, +X LEFT, +Y up, +Z back.
         private float _simYaw;
         private float _simPitch;
         private float _simRoll;
@@ -300,11 +321,11 @@ namespace ApocalypterHeadTracking.Runtime
             }
             if (UnityEngine.Input.GetKey(KeyCode.Keypad1))
             {
-                _simX -= CmPerSec * dt;        // pan left
+                _simX += CmPerSec * dt;        // head left  (OpenTrack +X = left)
             }
             if (UnityEngine.Input.GetKey(KeyCode.Keypad3))
             {
-                _simX += CmPerSec * dt;        // pan right
+                _simX -= CmPerSec * dt;        // head right
             }
             if (UnityEngine.Input.GetKeyDown(KeyCode.Keypad5))
             {
@@ -373,16 +394,18 @@ namespace ApocalypterHeadTracking.Runtime
                 return;
             }
 
-            Quaternion h = ComputeOffset();
+            float hp = HolderPitch();
+            Quaternion h = ComputeOffset(hp);
             Quaternion vanilla = _hasOffset
                 ? Quaternion.Inverse(_applied) * cam.localRotation
                 : cam.localRotation;
             cam.localRotation = h * vanilla;
-            // Translation is additive: CMP reads the position each frame and adds its
-            // shake delta, and additions commute, so the strip below is exact in
-            // either execution order. The offset lives in the camera's (head-rotated)
-            // local frame: +x right, +y up, +z forward.
-            Vector3 pos = _smoothPos;
+            // Translation is additive: CMP (cinemachineMode) does
+            // localPosition = localPosition + shake, and vector additions commute, so
+            // subtracting exactly the vector we added last frame is an exact strip in
+            // either LateUpdate order. The vector is rebuilt each frame (body frame →
+            // holder-local metres) and stored exactly as written.
+            Vector3 pos = ComputePositionOffset(hp);
             Vector3 vanillaPos = _hasPos ? cam.localPosition - _appliedPos : cam.localPosition;
             cam.localPosition = vanillaPos + pos;
             _applied = h;
@@ -403,11 +426,47 @@ namespace ApocalypterHeadTracking.Runtime
         /// (mouse + head) is clamped to ±89° so the view never flips over the pole.
         /// Reads the holder rotation only; MouseLook has written it in Update.
         /// </summary>
-        private Quaternion ComputeOffset()
+        private Quaternion ComputeOffset(float hp)
         {
-            float hp = _holder != null ? Mathf.DeltaAngle(0f, _holder.localEulerAngles.x) : 0f;
             float pitch = Mathf.Clamp(_smooth.x, -TotalPitchLimit - hp, TotalPitchLimit - hp);
             return Quaternion.Euler(-hp, 0f, 0f) * Quaternion.Euler(hp + pitch, _smooth.y, _smooth.z);
+        }
+
+        /// <summary>Signed mouse pitch of the holder (+ = down). Read only.</summary>
+        private float HolderPitch()
+        {
+            return _holder != null ? Mathf.DeltaAngle(0f, _holder.localEulerAngles.x) : 0f;
+        }
+
+        /// <summary>
+        /// Translation offset as written to PlayerCamera.localPosition (0.1.5).
+        ///  - Units: _smoothPos is camera CENTIMETRES; localPosition is in the
+        ///    holder's space, i.e. Unity units = metres (× holder scale). 0.1.2–0.1.4
+        ///    wrote the centimetres as metres (×100): a 10 cm lean moved the camera
+        ///    5 m at the 0.1.2 default.
+        ///  - Frame: body frame = the holder with its mouse PITCH removed (yaw kept),
+        ///    the same split as the rotation offset. localPosition lives in the
+        ///    holder's mouse-pitched space, so in 0.1.4 a forward lean while looking
+        ///    down drove the camera into the floor and "up" moved it backwards.
+        ///    holder = Ry(hy)·Rx(hp) ⇒ holder-local = Rx(−hp) · bodyVector.
+        ///  - Scale: divided by the holder's lossyScale so "cm" stays cm on a scaled
+        ///    rig (no-op at scale 1).
+        /// </summary>
+        private Vector3 ComputePositionOffset(float hp)
+        {
+            if (_smoothPos.x == 0f && _smoothPos.y == 0f && _smoothPos.z == 0f)
+            {
+                return Vector3.zero;
+            }
+            Vector3 v = Quaternion.Euler(-hp, 0f, 0f) * (_smoothPos * 0.01f);
+            if (_holder != null)
+            {
+                Vector3 s = _holder.lossyScale;
+                if (Mathf.Abs(s.x) > 1e-4f) { v.x /= s.x; }
+                if (Mathf.Abs(s.y) > 1e-4f) { v.y /= s.y; }
+                if (Mathf.Abs(s.z) > 1e-4f) { v.z /= s.z; }
+            }
+            return v;
         }
 
         /// <summary>Strip H (rotation) and the translation offset from the camera

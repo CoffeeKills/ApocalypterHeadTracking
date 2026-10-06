@@ -56,6 +56,14 @@ namespace ApocalypterHeadTracking.Runtime
                     line += "  yaw " + _runtime.DisplayYaw.ToString("0.0")
                         + " pitch " + _runtime.DisplayPitch.ToString("0.0");
                 }
+                if (HeadTrackingSettings.Mode == HeadTrackingSettings.ModeRotationOnly)
+                {
+                    line += "  [rotation only]";
+                }
+                else if (HeadTrackingSettings.Mode == HeadTrackingSettings.ModePositionOnly)
+                {
+                    line += "  [lean only]";
+                }
                 if (HeadTrackingSettings.RecenterKey != KeyCode.None)
                 {
                     line += "  (" + HeadTrackingSettings.RecenterKey + " recenter)";

@@ -1,4 +1,4 @@
-Apocalypter Head Tracking v0.1.4-alpha
+Apocalypter Head Tracking v0.1.6-alpha
 ======================================
 
 Headtracking for Apocalypter's first-person view via OpenTrack.
@@ -26,6 +26,27 @@ Install
 -------
 Copy ApocalypterHeadTracking.dll and ApocalypterHeadTracking.png into
 BepInEx\plugins\ while the game is closed.
+
+What's new in 0.1.6
+-------------------
+- Tracking mode: full, rotation only, or lean only. Set Mode in the mod menu, or
+  bind ModeKey (e.g. PageUp) to cycle it in-game. Switching eases smoothly, and
+  the HUD shows the mode. No key is bound by default.
+
+What's new in 0.1.5
+-------------------
+- Head translation (lean) fixed at the root. The mod treated centimetres as
+  metres, which is why it flew the camera across the map and why the sliders sat
+  at 0.005-0.05. Translation sensitivity is now simply "camera cm per head cm":
+  1 = 1:1, slider 0-3, default 1.
+- Lean directions now match OpenTrack: no more inverting X and Z.
+- Leaning while looking up or down stays level instead of sinking into the
+  ground.
+- The camera never moves more than 50 cm per axis.
+- Your existing settings are upgraded automatically and behave exactly as
+  before (values x100, InvertX/InvertZ flipped). If you inverted X/Z in
+  OpenTrack for this mod, you can now undo that there and set InvertX/InvertZ
+  back to false.
 
 What's new in 0.1.4
 -------------------

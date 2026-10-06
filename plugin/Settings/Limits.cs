@@ -8,19 +8,25 @@ namespace ApocalypterHeadTracking.Settings
         public const float SensMax = 3f;
         public const float SensDefault = 0.5f;   // real head movement is small: 1:1 is too much
 
-        /// <summary>Translation sensitivity: camera centimetres per tracked
-        /// centimetre. Webcam-tracked translation is noisy and can spike, and a
-        /// few cm of camera offset reads as a lot in first person — keep the
-        /// default tiny (0.5 was far too much: first tester feedback).</summary>
-        public const float TransDefault = 0.01f;
+        /// <summary>Translation sensitivity (0.1.5): a plain ratio, camera
+        /// centimetres per tracked head centimetre — 1 = 1:1, the convention every
+        /// surveyed headtracking mod uses (docs/headtracking-expectations.md).
+        /// 0.1.2–0.1.4 applied the tracker's centimetres as Unity METRES, which is
+        /// why their "good" values sat at 0.005–0.05 (= 0.5–5 here).</summary>
+        public const float TransDefault = 1f;      // = the 0.1.3/0.1.4 default 0.01 on screen
 
-        /// <summary>Translation range spans the whole REALISTIC band (0–0.05) so
-        /// the Apocasetter slider has usable precision where translation actually
-        /// lives — a 0–3 range forced testers to bottom out at 0.005.</summary>
-        public const float TransMax = 0.05f;
+        /// <summary>Same 0–3 span as the rotation sliders.</summary>
+        public const float TransMax = 3f;
 
-        /// <summary>Largest translation offset the mod will apply (cm).</summary>
+        /// <summary>Largest CAMERA translation per axis (cm), applied after
+        /// sensitivity: bounds how far the camera can leave the head position
+        /// whatever the slider says (0.1.4 clamped the head input instead, so the
+        /// camera could travel 50 cm × sensitivity).</summary>
         public const float MaxTransCm = 50f;
+
+        /// <summary>Config file format version (0.1.5). 2 = translation in cm/cm
+        /// with OpenTrack-correct axis signs.</summary>
+        public const int ConfigVersion = 2;
 
         public const float SmoothMin = 0f;
         public const float SmoothMax = 0.95f;

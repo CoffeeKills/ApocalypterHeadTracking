@@ -44,17 +44,20 @@ first run) and in the Apocasetter Mods menu:
 | `UdpPort` | 4242 | 1–65535 | UDP listen port (OpenTrack UDP mode). |
 | `SensitivityYaw` / `SensitivityPitch` | 0.5 | 0–3 | Camera degrees per head degree (0.5× default: real head movement is small). |
 | `SensitivityRoll` | 0 | 0–3 | Roll response (0 = off). |
-| `SensitivityX` / `SensitivityY` / `SensitivityZ` | 0.01 | 0–0.05 | Camera cm per tracked cm of head translation: X = pan/lean sideways, Y = height, Z = forward/back. The slider spans the whole realistic band — no more bottoming out at 0.001. |
+| `SensitivityX` / `SensitivityY` / `SensitivityZ` | 1 | 0–3 | Head translation, camera cm per head cm (1 = 1:1, 0 = off). X = sideways lean, Y = up/down, Z = forward/back. The camera moves at most 50 cm per axis. |
 | `InvertX` / `InvertY` / `InvertZ` | false | bool | Flip the translation direction per axis. |
 | `InvertYaw` / `InvertPitch` | false | bool | Flip direction. |
 | `Smoothing` | 0.5 | 0–0.95 | Higher = the camera follows more slowly and smoothly (0 = instant). |
 | `MaxPitch` | 80 | 0–180 | Head-pitch clamp, degrees. Mouse + head pitch is also kept within ±89°. |
 | `RecenterKey` | F8 | key | Hold-this-pose neutral (main key only; modifiers ignored). |
 | `ToggleKey` | None | key | In-game on/off switch. |
+| `Mode` | 0 | 0 / 1 / 2 | What the head moves: 0 = rotation + lean, 1 = rotation only, 2 = lean only. |
+| `ModeKey` | None | key | Cycles `Mode` in-game (comparable mods use PageUp). |
 | `ShowHud` | true | bool | Status line with live yaw/pitch. |
 | `[Debug] LogPose` | false | bool | Raw tracker values once per second. |
-| `[Debug] SimulateInput` | false | bool | Numpad fake head (4/6 yaw, 8/2 pitch, 5 zero) — no tracker needed. |
+| `[Debug] SimulateInput` | false | bool | Numpad fake head (4/6 yaw, 8/2 pitch, 7/9 roll, 1/3 lean, 5 zero). No tracker needed. |
 | `[General] Apocasetter` | true | bool | Opt-in for the Apocasetter Mods menu. |
+| `[General] ConfigVersion` | 2 | 0–2 | Internal file-format marker for one-time upgrades. Do not edit. |
 
 ## Load-bearing game facts
 
@@ -68,6 +71,11 @@ first run) and in the Apocasetter Mods menu:
   every LateUpdate — it multiplies on the right and never strips its previous
   shake. The mod therefore **pre-multiplies** its offset (`H * vanilla`), which
   makes stripping it exact whatever order the two LateUpdates run in (0.1.1).
+- CameraMovementPro also *adds* its position shake to `localPosition` each frame.
+  The mod's head translation is additive too, and vector additions commute, so its
+  strip is exact. `localPosition` is in the holder's (mouse-pitched) space, in
+  Unity metres. The mod converts head cm to metres and removes the mouse pitch
+  (0.1.5).
 - The vehicle camera switch (C key) deactivates `PlayerCamera` for 3rd person and
   re-activates it for 1st — the mod applies its offset only while `PlayerCamera` is
   active, which is the entire "first-person only" rule. When the camera goes
@@ -104,6 +112,85 @@ Install: copy `plugin\bin\Release\netstandard2.0\ApocalypterHeadTracking.dll` an
 game is closed** (the game locks the DLL while running).
 
 ## Changes
+
+### Changes in 0.1.6-alpha
+
+Follows the 0.1.5 research recommendation (`docs/headtracking-expectations.md`):
+switching translation off without opening a menu is the most common extra in
+comparable headtracking mods. Reasoning trail: `docs/audit-0.1.6.md`.
+
+- **New `Mode` key:** 0 = full (rotation + lean), 1 = rotation only, 2 = lean
+  only. It also shows in the Apocasetter menu. Invalid values fall back to 0.
+- **New `ModeKey`:** cycles full → rotation only → lean only. The choice is saved
+  like the toggle key's.
+  - Default is **None**, so no key is taken until you choose one, the same as
+    `ToggleKey`. Comparable mods use PageUp.
+- **Smooth switching:** a part you switch off eases out over the Smoothing time,
+  and eases back in when you switch it on. Nothing snaps.
+- **HUD:** shows `[rotation only]` or `[lean only]` when you're not in full mode.
+
+Config migration: none. Both keys are new, and their defaults reproduce 0.1.5
+exactly. `ConfigVersion` stays 2.
+
+### Changes in 0.1.5-alpha
+
+Round-2 audit plus research.
+
+- Research report: `docs/headtracking-expectations.md`.
+- Reasoning trail: `docs/audit-0.1.5.md`.
+
+**Bugs fixed (translation, 0.1.2–0.1.4)**
+
+1. **Head centimetres were applied as Unity metres (×100).** This is the real
+   cause of "the camera rolled over the world, 100s of meters away". The 0.1.2
+   default of 0.5 meant a 10 cm lean moved the camera 5 m, and the 0–3 range
+   allowed 150 m. The 0.1.3/0.1.4 "tiny defaults" hid the bug instead of fixing
+   it. Sensitivity is now true camera cm per head cm.
+2. **X and Z were reversed.** OpenTrack's convention is +X left, +Y up, +Z back.
+   The evidence is OpenTrack's own SimConnect output, plus the tester having to
+   invert exactly X and Z. The mapping is now correct out of the box.
+3. **Leaning while looking up or down moved along the mouse-pitched axis.** At 60°
+   down, a forward lean dropped the camera 8.7 cm (into the ground or dashboard)
+   and "up" moved it forward. Translation now runs in the body frame: forward is
+   level and up is up, matching the rotation offset.
+4. **The ±50 cm clamp applied to the head input, not the camera.** The camera
+   could reach 50 cm × sensitivity. It's now capped at ±50 cm per axis after
+   sensitivity.
+5. **Scaled rigs.** The translation offset is divided by the holder's scale, so
+   a cm stays a cm.
+6. **SimulateInput Numpad 1/3** moved the wrong way under the corrected mapping.
+   Fixed.
+
+**Design changes**
+
+- **Config model decision (owner's open question), option (a).** Translation
+  sensitivity is a plain ratio, 1 = 1:1, on a 0–3 slider: the same shape as the
+  rotation sliders and the convention every surveyed headtracking mod uses.
+  - Meta-config range sliders and free-text fields were rejected. Reasons are in
+    the research report.
+  - The 0.001–0.05 "bottoming out" was the units bug, not a slider problem.
+- `tools/test-headpose.py` encodes translation in OpenTrack's convention. The
+  0.1.4 rig mirrored the mod's sign bug, the same trap as 0.1.0's FreeTrack bug.
+- No Harmony patches, NuGet packages or uGUI. The per-frame paths still allocate
+  nothing.
+
+**Config keys and migration**
+
+- **New:** `[General] ConfigVersion` (int, internal; default 2).
+- **Changed default:** `SensitivityX/Y/Z` 0.01 → **1.0**. The on-screen behaviour
+  is identical; only the unit is corrected. The range changes from 0–0.05 to 0–3.
+- **Automatic one-time migration.** It applies to files written by 0.1.2–0.1.4,
+  detected as "has `SensitivityX`, no `ConfigVersion`":
+  - X/Y/Z values are multiplied by 100 and clamped to 3 (0.01 → 1, 0.005 → 0.5).
+  - InvertX and InvertZ are flipped.
+  - Your setup looks and moves exactly as before, whether you compensated in
+    OpenTrack or with the mod's Invert keys.
+  - The log line `Config upgraded to format 2` shows the before and after values.
+- **If you inverted X/Z in OpenTrack only because of this mod:** you can now undo
+  that in OpenTrack *and* set the mod's InvertX/InvertZ back to false, for a
+  clean setup.
+- Files from 0.1.0/0.1.1 and fresh installs need nothing. No key was renamed or
+  removed, and the GUID is unchanged.
 
 ### Changes in 0.1.4-alpha
 

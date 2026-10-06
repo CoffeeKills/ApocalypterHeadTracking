@@ -2,7 +2,7 @@
 
 ## Status
 
-Version 0.1.1-alpha (audit). **[0.1.1]** marks items changed in this release.
+Version 0.1.6-alpha. **[0.1.6]** marks items changed in this release; older tags are kept.
 
 - [x] FreeTrack 2.0 shared-memory input (`FT_SharedMem`). **[0.1.1]** Layout and
       encoding are source-verified against OpenTrack: radians, yaw/pitch negated,
@@ -25,6 +25,15 @@ Version 0.1.1-alpha (audit). **[0.1.1]** marks items changed in this release.
       noisy webcam translation); new InvertX/InvertY/InvertZ keys.
       **[0.1.4]** Translation slider rescale: 0–0.05 range spans the whole
       realistic band with fine steps.
+      **[0.1.5]** Translation fixed:
+      - cm → m unit bug (×100)
+      - OpenTrack axis signs (X/Z were reversed)
+      - body frame (no sinking when looking down)
+      - ±50 cm cap on the camera output
+      - holder-scale compensation
+      - sensitivity is now camera cm per head cm (1 = 1:1, 0–3, default 1)
+      - one-time migration of 0.1.2–0.1.4 configs (×100, InvertX/Z flipped,
+        `[General] ConfigVersion`)
 - [x] Smoothing (exponential, configurable). **[0.1.1]** Non-finite reset, eases
       in from zero after re-enable. **[0.1.2]** Smooths translation too.
 - [x] Recenter key (F8) + optional toggle key. **[0.1.1]** The neutral resets on a
@@ -36,11 +45,18 @@ Version 0.1.1-alpha (audit). **[0.1.1]** marks items changed in this release.
 - [x] `[Debug] LogPose` raw-value logging for protocol verification. **[0.1.1]**
       Normalized degrees + DataID/packet counter + applied offset.
 - [x] `[Debug] SimulateInput` numpad fake head. **[0.1.1]** Numpad 8 = up.
-      **[0.1.2]** Numpad 7/9 roll, 1/3 pan.
+      **[0.1.2]** Numpad 7/9 roll, 1/3 pan. **[0.1.5]** 1/3 sign fixed.
 - [x] `tools/test-headpose.py` simulated tracker. **[0.1.1]** Encodes exactly like
       OpenTrack; H/F/N keys for the still-head, tracker-stop and NaN cases.
       **[0.1.2]** Z/X, R/V, T/G translation keys; translations encoded like
-      OpenTrack.
+      OpenTrack. **[0.1.5]** Translation now uses OpenTrack's real signs (+X left,
+      +Z back); the 0.1.4 rig mirrored the mod's sign bug.
+- [x] **[0.1.5]** Research report `docs/headtracking-expectations.md` and the
+      config-model decision (option (a): ratio units, 1 = 1:1).
+- [x] **[0.1.6]** Tracking mode: `Mode` (full / rotation only / lean only) and
+      `ModeKey` to cycle it (default None). Switching eases through the
+      smoother, and the HUD shows the mode. This is the most-shipped extra in
+      comparable mods (research 0.1.5).
 - [ ] Head translation (x/y/z lean) — **[0.1.2] shipped: rotation + translation.
       Removed from the not-planned list.**
 - [ ] Verify harness: not planned for v1 (lite-mod precedent). The 0.1.1 audit

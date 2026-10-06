@@ -12,6 +12,12 @@ namespace ApocalypterHeadTracking.Settings
         public const int InputFreeTrack = 0;
         public const int InputOpenTrackUdp = 1;
 
+        // 0.1.6: which offsets are applied. Cycled by ModeKey, persisted in [HeadTracking] Mode.
+        public const int ModeFull = 0;
+        public const int ModeRotationOnly = 1;
+        public const int ModePositionOnly = 2;
+        public const int ModeCount = 3;
+
         public static bool Enabled = true;
         public static int InputMode = InputFreeTrack;
         public static int UdpPort = Limits.PortDefault;
@@ -31,6 +37,8 @@ namespace ApocalypterHeadTracking.Settings
         public static float MaxPitch = Limits.MaxPitchDefault;
         public static KeyCode RecenterKey = KeyCode.F8;
         public static KeyCode ToggleKey = KeyCode.None;
+        public static int Mode = ModeFull;
+        public static KeyCode ModeKey = KeyCode.None;
         public static bool ShowHud = true;
         public static bool LogPose = false;
         public static bool SimulateInput = false;
