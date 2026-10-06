@@ -1,0 +1,89 @@
+SHORT DESCRIPTION
+------------------------------------------------------------------
+Headtracking for Apocalypter: turn your head to look around in first person — on foot and while driving. Works with OpenTrack and a plain webcam. Wheel users: keep both hands on the wheel.
+
+LONG DESCRIPTION
+------------------------------------------------------------------
+# Head Tracking (FreeTrack / OpenTrack)
+
+Turn your head, the camera follows. Full 6DOF headtracking for Apocalypter's
+first-person view: **yaw, pitch, roll**, plus **head lean** — pan sideways, rise,
+and lean forward/back. Works on foot and while driving in 1st person. Built from
+the community's request for FreeTrack 2.x support.
+
+OpenTrack's mouse emulation doesn't work in this game (it dies the moment the
+game takes the mouse). This mod reads the tracker's pose directly — no mouse
+hacks, no input emulation — and rotates the camera additively on top of your
+normal mouse look.
+
+Why you want this: lean out the window to shoot, look around the big turbo,
+peer past whatever's blocking the passenger seat — without taking a hand off
+the wheel or keyboard.
+
+## What you get
+
+- Rotation: yaw / pitch / roll, smoothed and tuned per axis
+- Lean: sideways pan, height, forward/back — smoothed the same way
+- Recenter key (F8): look straight ahead, press, that's your neutral
+- Mode switch: full tracking, rotation only, or lean only (bindable key)
+- Status HUD with live tracking state
+- First-person only: the 3rd-person vehicle camera is never touched
+- Every setting in the Apocasetter Mods menu (F6) — live sliders, no restarts
+- Input: FreeTrack 2.0 shared memory (OpenTrack → Output → FreeTrack 2.0)
+  or OpenTrack UDP over network
+
+## Requirements
+
+- BepInEx 5 (as shipped with the game's mod setup)
+- OpenTrack (free) with any tracker it supports: webcam face-tracking
+  (built in), a phone, IR clips, or VR controllers
+- Apocasetter recommended for in-game configuration (the mod works without
+  it — edit BepInEx\config\dev.apocalypter.headtracking.cfg)
+
+## Quick start
+
+1. Install OpenTrack, pick a tracker, start tracking.
+2. In OpenTrack: Output → FreeTrack 2.0 (or UDP over network, port 4242).
+3. In game, first person: press F8 while looking straight ahead.
+4. Tune sensitivity, smoothing, invert and modes in the Apocasetter Mods
+   menu (F6). Defaults are sensible: rotation 0.5×, lean 1:1.
+
+## Tester's words
+
+"I can stick my head out the car door window and shoot my gun from there.
+If I installed a big turbo I can move head and camera to the left a bit and
+see what was covered by the turbo. For wheel joystick users this mod is a
+must have thing."
+
+[screenshot: leaning out the window]
+[screenshot: looking around the turbo]
+[screenshot: the Apocasetter settings for the mod]
+
+## Compatibility
+
+- Runs alongside Apocalypter Vehicle Tuning and Vehicle Tuning Lite.
+- Do not run it alongside another mod that rotates the first-person camera.
+
+## Notes
+
+- Alpha software: the protocol encodings are verified against OpenTrack's
+  source, but direction signs on a live OpenTrack install are still being
+  confirmed. If your camera turns the wrong way, flip the Invert toggles in
+  the mod menu.
+- Roll is off by default (it's disorienting in FPS); enable it with
+  SensitivityRoll if you want it.
+
+Problems? Contact @OddlyTugs on Discord.
+
+## Changelog (highlights)
+
+- 0.1.1: FreeTrack units fixed (radians, signs), still-head tracking, exact
+  camera hand-back
+- 0.1.2: head lean (pan/height/forward-back)
+- 0.1.5: lean root cause fixed (cm treated as metres — the "camera flew away"
+  bug); OpenTrack-correct lean directions; your old config migrates itself
+- 0.1.6: rotation-only / lean-only modes
+- 0.1.7: shown as "Head Tracking" in the mods list
+- 0.1.8: new icon
+
+GitHub: https://github.com/CoffeeKills/ApocalypterHeadTracking
