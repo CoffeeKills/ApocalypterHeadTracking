@@ -1,4 +1,4 @@
-Apocalypter Head Tracking v0.1.9-alpha
+Apocalypter Head Tracking v0.1.10-alpha
 ======================================
 
 Headtracking for Apocalypter's first-person view via OpenTrack.
@@ -26,6 +26,12 @@ Install
 -------
 Copy ApocalypterHeadTracking.dll and ApocalypterHeadTracking.png into
 BepInEx\plugins\ while the game is closed.
+
+What's new in 0.1.10
+-------------------
+- More resilient to other mods: if a mod moves the camera, this mod finds it by
+  tag and puts it back. New UseIsolationRig toggle in the mod menu (default on)
+  for mods that need PlayerCamera as a direct child of the holder.
 
 What's new in 0.1.9
 -------------------

@@ -39,6 +39,7 @@ namespace ApocalypterHeadTracking.Settings
         public static KeyCode ToggleKey = KeyCode.None;
         public static int Mode = ModeFull;
         public static KeyCode ModeKey = KeyCode.None;
+        public static bool UseIsolationRig = true;
         public static bool ShowHud = true;
         public static bool LogPose = false;
         public static bool SimulateInput = false;

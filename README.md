@@ -120,6 +120,20 @@ game is closed** (the game locks the DLL while running).
 
 ## Changes
 
+### Changes in 0.1.10-alpha
+
+- **Mod-landscape resilience.** If another mod re-parents `PlayerCamera` away
+  from the holder, the mod now finds it by its MainCamera tag and puts it back
+  under the rig automatically. New `UseIsolationRig` toggle (default true):
+  turn it off only if a mod requires `PlayerCamera` to stay a direct child of
+  the holder — the mod then falls back to the pre-0.1.9 direct-write mode with
+  exact hand-back. The switch is live in the Apocasetter menu.
+- Surveyed the Apocasetter index (19 mods): the camera-relevant ones are
+  Apocaplayer (third-person camera — compatible: the mod only applies while
+  `PlayerCamera` is active), ApocaHUD43 (screen-edge HUD — no conflict), and
+  Part Adjuster Tools (uses numpad 4/6/2/8 — only overlaps the opt-in
+  `[Debug] SimulateInput` keys, which are off by default).
+
 ### Changes in 0.1.9-alpha
 
 - **Mod-conflict fix (issue #2).** The offset now lives on a dedicated

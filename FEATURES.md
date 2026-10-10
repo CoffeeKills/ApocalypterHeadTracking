@@ -61,6 +61,11 @@ Version 0.1.6-alpha. **[0.1.6]** marks items changed in this release; older tags
       `ModeKey` to cycle it (default None). Switching eases through the
       smoother, and the HUD shows the mode. This is the most-shipped extra in
       comparable mods (research 0.1.5).
+- [x] **[0.1.10]** Mod-landscape resilience: MainCamera-tag fallback repairs a
+      camera moved by another mod; `UseIsolationRig` toggle (default true) falls
+      back to direct-write mode for mods that need PlayerCamera as a direct
+      child. Landscape surveyed (Apocasetter index): Apocaplayer / ApocaHUD43 /
+      Part Adjuster Tools are compatible or non-overlapping.
 - [ ] Head translation (x/y/z lean) — **[0.1.2] shipped: rotation + translation.
       Removed from the not-planned list.**
 - [ ] Verify harness: not planned for v1 (lite-mod precedent). The 0.1.1 audit

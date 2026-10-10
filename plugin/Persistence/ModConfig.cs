@@ -33,6 +33,7 @@ namespace ApocalypterHeadTracking.Persistence
         private static ConfigEntry<bool> _showHud;
         private static ConfigEntry<bool> _logPose;
         private static ConfigEntry<bool> _simulateInput;
+        private static ConfigEntry<bool> _useIsolationRig;
         // Read by Apocasetter via Chainloader (not wired to SettingsChanged — we never read it).
         private static ConfigEntry<bool> _apocasetter;
         // 0.1.5: file-format marker for one-time migrations (not a runtime setting).
@@ -144,6 +145,9 @@ namespace ApocalypterHeadTracking.Persistence
             _simulateInput = config.Bind("Debug", "SimulateInput", false,
                 "Feed a simulated head pose from the numpad instead of a tracker "
                 + "(testing without hardware): Numpad 4/6 yaw, 8/2 pitch, 7/9 roll, 1/3 sideways lean, Numpad5 zero.");
+            _useIsolationRig = config.Bind("HeadTracking", "UseIsolationRig", true,
+                "Keep the head offset on the mod's own rig object (recommended: immune to other camera mods). "
+                + "Turn off only if another mod requires PlayerCamera to stay a direct child of the holder.");
             _apocasetter = config.Bind("General", "Apocasetter", true,
                 "Show this mod in the Apocasetter Mods menu (requires Apocasetter installed).");
             _configVersion = config.Bind("General", "ConfigVersion", Limits.ConfigVersion,
@@ -269,6 +273,7 @@ namespace ApocalypterHeadTracking.Persistence
             Wire(_showHud);
             Wire(_logPose);
             Wire(_simulateInput);
+            Wire(_useIsolationRig);
         }
 
         private static void Wire<T>(ConfigEntry<T> entry)
@@ -330,6 +335,7 @@ namespace ApocalypterHeadTracking.Persistence
             HeadTrackingSettings.ShowHud = _showHud.Value;
             HeadTrackingSettings.LogPose = _logPose.Value;
             HeadTrackingSettings.SimulateInput = _simulateInput.Value;
+            HeadTrackingSettings.UseIsolationRig = _useIsolationRig.Value;
         }
     }
 }

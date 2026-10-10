@@ -68,6 +68,14 @@ namespace ApocalypterHeadTracking.Runtime
         private Transform _cam;
         private Transform _offsetGo;    // our dedicated rig child of the holder
         private float _nextResolve;
+        private bool _rigActive = true; // which mode the camera state is in
+
+        // Legacy direct-write mode (UseIsolationRig = false) only:
+        private Transform _appliedCam;  // the transform that currently carries H
+        private Quaternion _applied = Quaternion.identity;
+        private Vector3 _appliedPos;
+        private bool _hasOffset;
+        private bool _hasPos;
 
         private void OnEnable()
         {
@@ -365,6 +373,14 @@ namespace ApocalypterHeadTracking.Runtime
                 return;
             }
 
+            // 0.1.10: UseIsolationRig can be switched live (Apocasetter). A mode
+            // change converts the camera state so each path starts from a clean base.
+            bool wantRig = HeadTrackingSettings.UseIsolationRig;
+            if (wantRig != _rigActive)
+            {
+                SwitchRigMode(wantRig);
+            }
+
             Transform cam = ResolveCamera();
             if (cam == null || !cam.gameObject.activeInHierarchy)
             {
@@ -376,12 +392,15 @@ namespace ApocalypterHeadTracking.Runtime
             }
             CameraActive = true;
 
-            if (!EnsureOffsetRig(cam))
+            if (wantRig)
             {
-                // Rig unusable this frame (holder destroyed, reparent refused):
-                // nothing to write; retry next frame.
-                RemoveOffset();
-                return;
+                if (!EnsureOffsetRig(cam))
+                {
+                    // Rig unusable this frame (holder destroyed, reparent refused):
+                    // nothing to write; retry next frame.
+                    RemoveOffset();
+                    return;
+                }
             }
 
             if (!_tracking && _smooth.sqrMagnitude < 1e-4f && _smoothPos.sqrMagnitude < 1e-4f)
@@ -393,15 +412,63 @@ namespace ApocalypterHeadTracking.Runtime
                 return;
             }
 
-            // 0.1.9: the offset lives on OUR dedicated rig child of the holder —
-            // never on PlayerCamera. The hand-back is the rig at identity, which no
-            // other mod can corrupt: whatever writes PlayerCamera (CameraMovementPro,
-            // third-party head-bob mods) composes BELOW our offset instead of
-            // interleaving with it. The CMP pre-multiply invariant of 0.1.1–0.1.8 is
-            // no longer needed, because the rig transform is ours alone.
             float hp = HolderPitch();
-            _offsetGo.localRotation = ComputeOffset(hp);
-            _offsetGo.localPosition = ComputePositionOffset(hp);
+            if (wantRig)
+            {
+                // 0.1.9: the offset lives on OUR dedicated rig child of the holder —
+                // never on PlayerCamera. The hand-back is the rig at identity, which no
+                // other mod can corrupt: whatever writes PlayerCamera (CameraMovementPro,
+                // third-party head-bob mods) composes BELOW our offset instead of
+                // interleaving with it. The CMP pre-multiply invariant of 0.1.1–0.1.8 is
+                // no longer needed, because the rig transform is ours alone.
+                _offsetGo.localRotation = ComputeOffset(hp);
+                _offsetGo.localPosition = ComputePositionOffset(hp);
+            }
+            else
+            {
+                // Legacy direct-write mode (UseIsolationRig = false): pre-multiply on
+                // the camera, strip with the inverse. Kept for mods that require
+                // PlayerCamera to stay a direct child of the holder.
+                Quaternion h = ComputeOffset(hp);
+                Quaternion vanilla = _hasOffset
+                    ? Quaternion.Inverse(_applied) * cam.localRotation
+                    : cam.localRotation;
+                cam.localRotation = h * vanilla;
+                Vector3 pos = ComputePositionOffset(hp);
+                Vector3 vanillaPos = _hasPos ? cam.localPosition - _appliedPos : cam.localPosition;
+                cam.localPosition = vanillaPos + pos;
+                _applied = h;
+                _appliedPos = pos;
+                _appliedCam = cam;
+                _hasOffset = true;
+                _hasPos = true;
+            }
+        }
+
+        /// <summary>Convert between rig and direct-write mode with the camera state
+        /// kept exact: rig → identity + camera back under the holder; direct → strip
+        /// from the camera, then the rig takes over (camera re-parented under it).</summary>
+        private void SwitchRigMode(bool wantRig)
+        {
+            if (!wantRig)
+            {
+                // Rig → legacy: zero the rig, then put the camera back under the
+                // holder (world-preserving) so the holder-space local math is exact.
+                RemoveOffset();
+                if (_offsetGo != null && _cam != null && _cam.parent == _offsetGo)
+                {
+                    _cam.SetParent(_holder, true);
+                }
+                _offsetGo = null;
+            }
+            else
+            {
+                // Legacy → rig: strip from the camera, forget the camera-state
+                // tracking; the rig is built (and the camera re-parented) on the
+                // next EnsureOffsetRig.
+                RemoveOffset();
+            }
+            _rigActive = wantRig;
         }
 
         /// <summary>
@@ -458,11 +525,10 @@ namespace ApocalypterHeadTracking.Runtime
             return v;
         }
 
-        /// <summary>Hand the camera back: the rig at identity. Nothing is computed
-        /// from the camera's transform, so no other writer (head-bob, third-party
-        /// mods) can make the strip inexact — the rig transform belongs to this mod
-        /// alone. Writing an INACTIVE rig/camera is harmless: identity changes
-        /// nothing, and the vehicle 3rdCamera is a different object, never touched.</summary>
+        /// <summary>Hand the camera back: the rig at identity (rig mode) or the
+        /// stored inverse (legacy mode). Writing an INACTIVE rig/camera is harmless:
+        /// identity changes nothing, and the vehicle 3rdCamera is a different
+        /// object, never touched.</summary>
         private void RemoveOffset()
         {
             if (_offsetGo != null)
@@ -470,6 +536,19 @@ namespace ApocalypterHeadTracking.Runtime
                 _offsetGo.localRotation = Quaternion.identity;
                 _offsetGo.localPosition = Vector3.zero;
             }
+            if (_hasOffset && _appliedCam != null)
+            {
+                _appliedCam.localRotation = Quaternion.Inverse(_applied) * _appliedCam.localRotation;
+            }
+            if (_hasPos && _appliedCam != null)
+            {
+                _appliedCam.localPosition = _appliedCam.localPosition - _appliedPos;
+            }
+            _hasOffset = false;
+            _hasPos = false;
+            _applied = Quaternion.identity;
+            _appliedPos = Vector3.zero;
+            _appliedCam = null;
         }
 
         /// <summary>
@@ -516,9 +595,11 @@ namespace ApocalypterHeadTracking.Runtime
         }
 
         /// <summary>Cached PlayerCamera; re-found (throttled) when destroyed, when
-        /// no longer under the holder, or while inactive (a respawn may build a new
-        /// player while the old camera lingers inactive). Never a per-frame
-        /// GameObject.Find.</summary>
+        /// no longer under the holder/rig, or while inactive (a respawn may build a
+        /// new player while the old camera lingers inactive). If another mod has
+        /// re-parented PlayerCamera elsewhere, the tag fallback finds it by its
+        /// MainCamera tag and EnsureOffsetRig puts it back under the rig. Never a
+        /// per-frame GameObject.Find.</summary>
         private Transform ResolveCamera()
         {
             bool valid = _cam != null && _holder != null
@@ -543,6 +624,17 @@ namespace ApocalypterHeadTracking.Runtime
                         if (rig != null)
                         {
                             c = rig.Find(CameraName);
+                        }
+                    }
+                    if (c == null)
+                    {
+                        // 0.1.10: another mod may have moved PlayerCamera out of the
+                        // holder entirely. Find it by its MainCamera tag (it is the
+                        // only GO with that name+tag) — the rig re-parents it.
+                        GameObject tagged = GameObject.FindGameObjectWithTag("MainCamera");
+                        if (tagged != null && tagged.name == CameraName)
+                        {
+                            c = tagged.transform;
                         }
                     }
                     if (c != null)
