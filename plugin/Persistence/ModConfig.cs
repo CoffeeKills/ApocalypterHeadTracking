@@ -34,6 +34,7 @@ namespace ApocalypterHeadTracking.Persistence
         private static ConfigEntry<bool> _logPose;
         private static ConfigEntry<bool> _simulateInput;
         private static ConfigEntry<bool> _useIsolationRig;
+        private static ConfigEntry<float> _maxLeanX, _maxLeanY, _maxLeanZ, _maxLeanRadius;
         // Read by Apocasetter via Chainloader (not wired to SettingsChanged — we never read it).
         private static ConfigEntry<bool> _apocasetter;
         // 0.1.5: file-format marker for one-time migrations (not a runtime setting).
@@ -148,6 +149,14 @@ namespace ApocalypterHeadTracking.Persistence
             _useIsolationRig = config.Bind("HeadTracking", "UseIsolationRig", true,
                 "Keep the head offset on the mod's own rig object (recommended: immune to other camera mods). "
                 + "Turn off only if another mod requires PlayerCamera to stay a direct child of the holder.");
+            _maxLeanX = BindRange("HeadTracking", "MaxLeanX", Limits.MaxLeanXDefault, Limits.MaxLeanMin, Limits.MaxLeanMax,
+                "Hard cap: how far the camera can lean sideways from the character, cm (default = human reach out a car window).");
+            _maxLeanY = BindRange("HeadTracking", "MaxLeanY", Limits.MaxLeanYDefault, Limits.MaxLeanMin, Limits.MaxLeanMax,
+                "Hard cap: how far the camera can rise/drop from the character, cm (default = human).");
+            _maxLeanZ = BindRange("HeadTracking", "MaxLeanZ", Limits.MaxLeanZDefault, Limits.MaxLeanMin, Limits.MaxLeanMax,
+                "Hard cap: how far the camera can move forward/back from the character, cm (default = human).");
+            _maxLeanRadius = BindRange("HeadTracking", "MaxLeanRadius", Limits.MaxLeanRadiusDefault, Limits.MaxLeanMin, Limits.MaxLeanMax,
+                "Hard cap: total camera distance from the character across all axes combined, cm (default = human reach).");
             _apocasetter = config.Bind("General", "Apocasetter", true,
                 "Show this mod in the Apocasetter Mods menu (requires Apocasetter installed).");
             _configVersion = config.Bind("General", "ConfigVersion", Limits.ConfigVersion,
@@ -274,6 +283,10 @@ namespace ApocalypterHeadTracking.Persistence
             Wire(_logPose);
             Wire(_simulateInput);
             Wire(_useIsolationRig);
+            Wire(_maxLeanX);
+            Wire(_maxLeanY);
+            Wire(_maxLeanZ);
+            Wire(_maxLeanRadius);
         }
 
         private static void Wire<T>(ConfigEntry<T> entry)
@@ -336,6 +349,10 @@ namespace ApocalypterHeadTracking.Persistence
             HeadTrackingSettings.LogPose = _logPose.Value;
             HeadTrackingSettings.SimulateInput = _simulateInput.Value;
             HeadTrackingSettings.UseIsolationRig = _useIsolationRig.Value;
+            HeadTrackingSettings.MaxLeanX = _maxLeanX.Value;
+            HeadTrackingSettings.MaxLeanY = _maxLeanY.Value;
+            HeadTrackingSettings.MaxLeanZ = _maxLeanZ.Value;
+            HeadTrackingSettings.MaxLeanRadius = _maxLeanRadius.Value;
         }
     }
 }

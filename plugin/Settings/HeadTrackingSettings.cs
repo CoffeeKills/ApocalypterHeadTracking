@@ -40,6 +40,10 @@ namespace ApocalypterHeadTracking.Settings
         public static int Mode = ModeFull;
         public static KeyCode ModeKey = KeyCode.None;
         public static bool UseIsolationRig = true;
+        public static float MaxLeanX = Limits.MaxLeanXDefault;
+        public static float MaxLeanY = Limits.MaxLeanYDefault;
+        public static float MaxLeanZ = Limits.MaxLeanZDefault;
+        public static float MaxLeanRadius = Limits.MaxLeanRadiusDefault;
         public static bool ShowHud = true;
         public static bool LogPose = false;
         public static bool SimulateInput = false;

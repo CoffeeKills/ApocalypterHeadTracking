@@ -161,13 +161,20 @@ namespace ApocalypterHeadTracking.Runtime
             targetPitch = Mathf.Clamp(targetPitch, -maxPitch, maxPitch);
 
             Vector3 target = new Vector3(targetPitch, targetYaw, targetRoll);
-            // Camera cm, clamped AFTER sensitivity: the camera never leaves the head
-            // position by more than MaxTransCm per axis, whatever the slider says.
-            float maxTrans = Limits.MaxTransCm;
+            // Camera cm, clamped AFTER sensitivity with HUMAN bounds by default:
+            // per-axis limits plus a radial cap, so the camera cannot leave the
+            // character by more than a person physically could — whatever the
+            // sliders or a spiking tracker say. All four caps are config keys
+            // (MaxLeanX/Y/Z/Radius) for setups that want something else (0.1.11).
             Vector3 targetPos = new Vector3(
-                Mathf.Clamp(dx * HeadTrackingSettings.SensitivityX * (HeadTrackingSettings.InvertX ? -1f : 1f), -maxTrans, maxTrans),
-                Mathf.Clamp(dy * HeadTrackingSettings.SensitivityY * (HeadTrackingSettings.InvertY ? -1f : 1f), -maxTrans, maxTrans),
-                Mathf.Clamp(dz * HeadTrackingSettings.SensitivityZ * (HeadTrackingSettings.InvertZ ? -1f : 1f), -maxTrans, maxTrans));
+                Mathf.Clamp(dx * HeadTrackingSettings.SensitivityX * (HeadTrackingSettings.InvertX ? -1f : 1f), -HeadTrackingSettings.MaxLeanX, HeadTrackingSettings.MaxLeanX),
+                Mathf.Clamp(dy * HeadTrackingSettings.SensitivityY * (HeadTrackingSettings.InvertY ? -1f : 1f), -HeadTrackingSettings.MaxLeanY, HeadTrackingSettings.MaxLeanY),
+                Mathf.Clamp(dz * HeadTrackingSettings.SensitivityZ * (HeadTrackingSettings.InvertZ ? -1f : 1f), -HeadTrackingSettings.MaxLeanZ, HeadTrackingSettings.MaxLeanZ));
+            float leanMag = targetPos.magnitude;
+            if (leanMag > HeadTrackingSettings.MaxLeanRadius)
+            {
+                targetPos *= HeadTrackingSettings.MaxLeanRadius / leanMag;
+            }
             // Mode (0.1.6) zeroes the TARGET of the switched-off part, not the applied
             // offset: the smoother eases it out (or back in) like a recenter, and the
             // camera write/strip path is untouched — a switched-off part simply

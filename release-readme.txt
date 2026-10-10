@@ -1,4 +1,4 @@
-Apocalypter Head Tracking v0.1.10-alpha
+Apocalypter Head Tracking v0.1.11-alpha
 ======================================
 
 Headtracking for Apocalypter's first-person view via OpenTrack.
@@ -26,6 +26,13 @@ Install
 -------
 Copy ApocalypterHeadTracking.dll and ApocalypterHeadTracking.png into
 BepInEx\plugins\ while the game is closed.
+
+What's new in 0.1.11
+-------------------
+- Human lean bounds: the camera can never leave your character by more than a
+  person physically could (45 cm sideways, 30 cm up/down and forward/back, 50 cm
+  total) — whatever the sensitivity sliders or a spiking tracker say. All four
+  caps are configurable (MaxLeanX/Y/Z/Radius).
 
 What's new in 0.1.10
 -------------------

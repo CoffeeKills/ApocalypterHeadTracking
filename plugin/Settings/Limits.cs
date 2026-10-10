@@ -18,11 +18,20 @@ namespace ApocalypterHeadTracking.Settings
         /// <summary>Same 0–3 span as the rotation sliders.</summary>
         public const float TransMax = 3f;
 
-        /// <summary>Largest CAMERA translation per axis (cm), applied after
-        /// sensitivity: bounds how far the camera can leave the head position
-        /// whatever the slider says (0.1.4 clamped the head input instead, so the
-        /// camera could travel 50 cm × sensitivity).</summary>
-        public const float MaxTransCm = 50f;
+        /// <summary>
+        /// Default camera-lean bounds (0.1.11): how far the camera may leave the
+        /// character, in centimetres — a HUMAN can't move its head further than
+        /// this, so neither can the camera by default, whatever the sliders or a
+        /// spiking tracker say. X is generous on purpose: leaning out of a car
+        /// window. All four are config keys (MaxLeanX/Y/Z/Radius) for setups that
+        /// want something else.</summary>
+        public const float MaxLeanXDefault = 45f;
+        public const float MaxLeanYDefault = 30f;
+        public const float MaxLeanZDefault = 30f;
+        /// <summary>Total distance from neutral (diagonal leans combine axes).</summary>
+        public const float MaxLeanRadiusDefault = 50f;
+        public const float MaxLeanMin = 0f;
+        public const float MaxLeanMax = 150f;
 
         /// <summary>Config file format version (0.1.5). 2 = translation in cm/cm
         /// with OpenTrack-correct axis signs.</summary>

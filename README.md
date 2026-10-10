@@ -46,7 +46,9 @@ first run) and in the Apocasetter Mods menu:
 | `UdpPort` | 4242 | 1–65535 | UDP listen port (OpenTrack UDP mode). |
 | `SensitivityYaw` / `SensitivityPitch` | 0.5 | 0–3 | Camera degrees per head degree (0.5× default: real head movement is small). |
 | `SensitivityRoll` | 0 | 0–3 | Roll response (0 = off). |
-| `SensitivityX` / `SensitivityY` / `SensitivityZ` | 1 | 0–3 | Head translation, camera cm per head cm (1 = 1:1, 0 = off). X = sideways lean, Y = up/down, Z = forward/back. The camera moves at most 50 cm per axis. |
+| `SensitivityX` / `SensitivityY` / `SensitivityZ` | 1 | 0–3 | Head translation, camera cm per head cm (1 = 1:1, 0 = off). X = sideways lean, Y = up/down, Z = forward/back. |
+| `MaxLeanX` / `MaxLeanY` / `MaxLeanZ` | 45 / 30 / 30 | 0–150 | Hard cap per axis: how far the camera can leave the character, cm (defaults = human reach). |
+| `MaxLeanRadius` | 50 | 0–150 | Hard cap: total camera distance from the character across all axes, cm. |
 | `InvertX` / `InvertY` / `InvertZ` | false | bool | Flip the translation direction per axis. |
 | `InvertYaw` / `InvertPitch` | false | bool | Flip direction. |
 | `Smoothing` | 0.5 | 0–0.95 | Higher = the camera follows more slowly and smoothly (0 = instant). |
@@ -119,6 +121,14 @@ Install: copy `plugin\bin\Release\netstandard2.0\ApocalypterHeadTracking.dll` an
 game is closed** (the game locks the DLL while running).
 
 ## Changes
+
+### Changes in 0.1.11-alpha
+
+- **Human lean bounds.** The camera can no longer leave the character by more
+  than a human physically could: per-axis hard caps (X ±45 cm for leaning out a
+  window, Y/Z ±30) plus a 50 cm total-distance cap, applied after sensitivity so
+  sliders or tracker spikes can't exceed them. All four are config keys
+  (`MaxLeanX/Y/Z/Radius`, 0–150) for setups that want different bounds.
 
 ### Changes in 0.1.10-alpha
 
