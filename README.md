@@ -102,6 +102,12 @@ first run) and in the Apocasetter Mods menu:
 - Runs alongside [Apocalypter Vehicle Tuning](https://github.com/CoffeeKills/ApocalypterVehicleTuning)
   and Vehicle Tuning Lite — it touches no vehicle code.
 - Do not run it alongside another mod that rotates the first-person camera.
+- **Known conflict:** "Head bob and visible legs for Apocalypter" (issue #2).
+  With its head-bob feature enabled, using the mouse while driving can leave the
+  camera in a rolled state that only a save/reload clears. The mod hands the
+  camera back exactly each frame, but that assumes the game's own head-bob is
+  the only other writer of the camera transform; a second camera-writing mod
+  breaks the assumption. Disable that mod's head-bob feature if you use both.
 
 ## Building
 
