@@ -338,3 +338,9 @@ load-bearing facts are untouched): `docs/audit-0.1.1.md`.
 Initial release: FreeTrack 2.0 + OpenTrack UDP input, additive first-person camera
 rotation with smoothing, sensitivity/invert/pitch clamp, recenter + toggle keys,
 status HUD, full Apocasetter config integration.
+
+## Credits
+
+Developed with **Claude Code (DeepSeek API)** and **Claude Chat**, with a
+third-party AI audit pass. Original request and testing: the Apocalypter modding
+community (issue #1 by runcajsz).
