@@ -16,6 +16,10 @@ Version 0.1.6-alpha. **[0.1.6]** marks items changed in this release; older tags
       **[0.1.1]** The offset is pre-multiplied, which makes the strip exact against
       CameraMovementPro. It's stripped on every hand-back path (3rd person,
       disable, scene load, runner destroyed, tracker decayed).
+      **[0.1.9]** The offset lives on a dedicated `HeadTrackingOffset` rig
+      between the holder and the camera (world-preserving re-parent); the mod
+      never writes the camera transform, so other camera-writing mods can't
+      corrupt the hand-back (issue #2).
 - [x] Per-axis sensitivity, invert, pitch clamp, roll (off by default).
       **[0.1.1]** Yaw turns about the body/vehicle up axis (no horizon roll),
       mouse + head pitch held within ±89°. **[0.1.2]** Head translation: X/Y/Z cm

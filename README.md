@@ -101,13 +101,12 @@ first run) and in the Apocasetter Mods menu:
 
 - Runs alongside [Apocalypter Vehicle Tuning](https://github.com/CoffeeKills/ApocalypterVehicleTuning)
   and Vehicle Tuning Lite — it touches no vehicle code.
-- Do not run it alongside another mod that rotates the first-person camera.
-- **Known conflict:** "Head bob and visible legs for Apocalypter" (issue #2).
-  With its head-bob feature enabled, using the mouse while driving can leave the
-  camera in a rolled state that only a save/reload clears. The mod hands the
-  camera back exactly each frame, but that assumes the game's own head-bob is
-  the only other writer of the camera transform; a second camera-writing mod
-  breaks the assumption. Disable that mod's head-bob feature if you use both.
+- **0.1.9:** the head offset lives on a dedicated rig object of its own
+  (`HeadTrackingOffset` between the holder and the camera), so other mods that
+  write the first-person camera (e.g. "Head bob and visible legs for
+  Apocalypter", issue #2) can no longer corrupt the hand-back — the camera is
+  re-parented under the rig (world-preserving) and the mod never writes the
+  camera transform itself.
 
 ## Building
 
@@ -120,6 +119,20 @@ Install: copy `plugin\bin\Release\netstandard2.0\ApocalypterHeadTracking.dll` an
 game is closed** (the game locks the DLL while running).
 
 ## Changes
+
+### Changes in 0.1.9-alpha
+
+- **Mod-conflict fix (issue #2).** The offset now lives on a dedicated
+  `HeadTrackingOffset` rig between the holder and the camera, and the mod never
+  writes the camera transform itself. Other camera-writing mods (head-bob mods,
+  etc.) can no longer corrupt the hand-back and leave the camera rolled after
+  driving. The camera is re-parented under the rig once, world-preserving;
+  verified safe against the game's own camera lookups (name/tag resolution,
+  GetChild usage, CameraMovementPro's component reference).
+
+### Changes in 0.1.8-alpha
+
+- New icon (user-drawn), repo description carries the Discord contact.
 
 ### Changes in 0.1.7-alpha
 

@@ -40,6 +40,7 @@ namespace ApocalypterHeadTracking.Runtime
 
         private const string HolderName = "PlayerCameraHolder";
         private const string CameraName = "PlayerCamera";
+        private const string OffsetGoName = "HeadTrackingOffset";
         private const float ResolveInterval = 0.5f;      // throttled GameObject.Find
         private const float InputRetryInterval = 2f;     // e.g. UDP port busy
         private const float TotalPitchLimit = 89f;       // holder pitch + head pitch
@@ -65,13 +66,8 @@ namespace ApocalypterHeadTracking.Runtime
         // ------------------------------------------------------------- camera state
         private Transform _holder;
         private Transform _cam;
+        private Transform _offsetGo;    // our dedicated rig child of the holder
         private float _nextResolve;
-
-        private Transform _appliedCam;  // the transform that currently carries H
-        private Quaternion _applied = Quaternion.identity;
-        private Vector3 _appliedPos;
-        private bool _hasOffset;
-        private bool _hasPos;
 
         private void OnEnable()
         {
@@ -380,39 +376,32 @@ namespace ApocalypterHeadTracking.Runtime
             }
             CameraActive = true;
 
-            if (cam != _appliedCam)
+            if (!EnsureOffsetRig(cam))
             {
-                RemoveOffset();   // a different camera than the one carrying H
+                // Rig unusable this frame (holder destroyed, reparent refused):
+                // nothing to write; retry next frame.
+                RemoveOffset();
+                return;
             }
 
             if (!_tracking && _smooth.sqrMagnitude < 1e-4f && _smoothPos.sqrMagnitude < 1e-4f)
             {
-                // Tracker gone and the offset has decayed: stop touching the camera.
+                // Tracker gone and the offset has decayed: stop touching the rig.
                 _smooth = Vector3.zero;
                 _smoothPos = Vector3.zero;
                 RemoveOffset();
                 return;
             }
 
+            // 0.1.9: the offset lives on OUR dedicated rig child of the holder —
+            // never on PlayerCamera. The hand-back is the rig at identity, which no
+            // other mod can corrupt: whatever writes PlayerCamera (CameraMovementPro,
+            // third-party head-bob mods) composes BELOW our offset instead of
+            // interleaving with it. The CMP pre-multiply invariant of 0.1.1–0.1.8 is
+            // no longer needed, because the rig transform is ours alone.
             float hp = HolderPitch();
-            Quaternion h = ComputeOffset(hp);
-            Quaternion vanilla = _hasOffset
-                ? Quaternion.Inverse(_applied) * cam.localRotation
-                : cam.localRotation;
-            cam.localRotation = h * vanilla;
-            // Translation is additive: CMP (cinemachineMode) does
-            // localPosition = localPosition + shake, and vector additions commute, so
-            // subtracting exactly the vector we added last frame is an exact strip in
-            // either LateUpdate order. The vector is rebuilt each frame (body frame →
-            // holder-local metres) and stored exactly as written.
-            Vector3 pos = ComputePositionOffset(hp);
-            Vector3 vanillaPos = _hasPos ? cam.localPosition - _appliedPos : cam.localPosition;
-            cam.localPosition = vanillaPos + pos;
-            _applied = h;
-            _appliedPos = pos;
-            _appliedCam = cam;
-            _hasOffset = true;
-            _hasPos = true;
+            _offsetGo.localRotation = ComputeOffset(hp);
+            _offsetGo.localPosition = ComputePositionOffset(hp);
         }
 
         /// <summary>
@@ -469,25 +458,61 @@ namespace ApocalypterHeadTracking.Runtime
             return v;
         }
 
-        /// <summary>Strip H (rotation) and the translation offset from the camera
-        /// that carries them (if it still exists). Writing an INACTIVE PlayerCamera
-        /// here only restores the game's own value; the vehicle 3rdCamera is a
-        /// different object and is never touched.</summary>
+        /// <summary>Hand the camera back: the rig at identity. Nothing is computed
+        /// from the camera's transform, so no other writer (head-bob, third-party
+        /// mods) can make the strip inexact — the rig transform belongs to this mod
+        /// alone. Writing an INACTIVE rig/camera is harmless: identity changes
+        /// nothing, and the vehicle 3rdCamera is a different object, never touched.</summary>
         private void RemoveOffset()
         {
-            if (_hasOffset && _appliedCam != null)
+            if (_offsetGo != null)
             {
-                _appliedCam.localRotation = Quaternion.Inverse(_applied) * _appliedCam.localRotation;
+                _offsetGo.localRotation = Quaternion.identity;
+                _offsetGo.localPosition = Vector3.zero;
             }
-            if (_hasPos && _appliedCam != null)
+        }
+
+        /// <summary>
+        /// 0.1.9 isolation rig: PlayerCamera is re-parented (world-preserving) under
+        /// a dedicated "HeadTrackingOffset" child of the holder, and the mod writes
+        /// ONLY that rig. Verified safe against the game data: the game resolves
+        /// PlayerCamera by name/tag (FindGameObject), its GetChild calls target the
+        /// vehicle 3rdCamera hierarchy, and CameraMovementPro grabs its transform via
+        /// GetComponent on the camera GO — none of them depend on PlayerCamera being
+        /// a direct child of the holder.
+        /// The rig is (re)built when missing (scene sweeps, FloatingOrigin rebuilds)
+        /// or when the camera is no longer under it.
+        /// </summary>
+        private bool EnsureOffsetRig(Transform cam)
+        {
+            if (_offsetGo == null)
             {
-                _appliedCam.localPosition = _appliedCam.localPosition - _appliedPos;
+                Transform existing = _holder != null ? _holder.Find(OffsetGoName) : null;
+                if (existing != null)
+                {
+                    _offsetGo = existing;
+                }
+                else if (_holder != null)
+                {
+                    GameObject go = new GameObject(OffsetGoName);
+                    go.transform.SetParent(_holder, false);
+                    go.transform.localPosition = Vector3.zero;
+                    go.transform.localRotation = Quaternion.identity;
+                    go.transform.localScale = Vector3.one;
+                    _offsetGo = go.transform;
+                }
             }
-            _hasOffset = false;
-            _hasPos = false;
-            _applied = Quaternion.identity;
-            _appliedPos = Vector3.zero;
-            _appliedCam = null;
+            if (_offsetGo == null || _offsetGo.parent != _holder)
+            {
+                return false;
+            }
+            if (cam.parent != _offsetGo)
+            {
+                // World-preserving reparent: the camera keeps its exact world pose,
+                // so nothing in the scene notices except the hierarchy.
+                cam.SetParent(_offsetGo, true);
+            }
+            return cam.parent == _offsetGo;
         }
 
         /// <summary>Cached PlayerCamera; re-found (throttled) when destroyed, when
@@ -496,7 +521,8 @@ namespace ApocalypterHeadTracking.Runtime
         /// GameObject.Find.</summary>
         private Transform ResolveCamera()
         {
-            bool valid = _cam != null && _holder != null && _cam.parent == _holder;
+            bool valid = _cam != null && _holder != null
+                && (_cam.parent == _holder || (_offsetGo != null && _cam.parent == _offsetGo));
             if (valid && _cam.gameObject.activeInHierarchy)
             {
                 return _cam;
@@ -508,7 +534,17 @@ namespace ApocalypterHeadTracking.Runtime
                 GameObject h = GameObject.Find(HolderName);
                 if (h != null)
                 {
+                    // The camera starts as a direct child of the holder; after the
+                    // rig exists it lives under HeadTrackingOffset. Try both.
                     Transform c = h.transform.Find(CameraName);
+                    if (c == null)
+                    {
+                        Transform rig = h.transform.Find(OffsetGoName);
+                        if (rig != null)
+                        {
+                            c = rig.Find(CameraName);
+                        }
+                    }
                     if (c != null)
                     {
                         _holder = h.transform;

@@ -78,3 +78,21 @@ the live one.
   camera per-frame with re-find fallback, never cache blindly across scene changes.
 - Death/menu states (`LookStop`/`Reset`) don't snap the camera transform.
 - Input axes: legacy InputManager; `Mouse X`/`Mouse Y` sens 0.1, no deadzone.
+
+## 0.1.9: isolation rig (mod-conflict fix)
+
+The mod re-parents `PlayerCamera` (world-preserving) under its own
+`HeadTrackingOffset` child of the holder and writes ONLY that rig — the camera
+transform itself is never touched. Verified safe against the game data:
+
+- `setGlobalGO` FSM resolves holder + camera by name/tag (`FindGameObject`).
+- Every `GetChild`+camera co-occurrence in the FSM dump targets the vehicle
+  `3rdCamera` hierarchy (zoom dolly + camera-switch), never the holder's children.
+- `CameraMovementController` obtains its transform via `GetComponent<Camera>()`
+  on the camera GO — unaffected by re-parenting.
+
+Consequence: any other writer of the camera transform (CMP shake, third-party
+head-bob mods) composes BELOW the rig, so the hand-back (rig at identity) is
+exact by construction — the 0.1.1–0.1.8 CMP-interleave invariant is obsolete.
+Residual risk: a mod that re-parents or destroys `PlayerCamera` itself (the rig
+repairs on the next resolve; resolve = throttled find, name-based).

@@ -1,4 +1,4 @@
-Apocalypter Head Tracking v0.1.8-alpha
+Apocalypter Head Tracking v0.1.9-alpha
 ======================================
 
 Headtracking for Apocalypter's first-person view via OpenTrack.
@@ -26,6 +26,13 @@ Install
 -------
 Copy ApocalypterHeadTracking.dll and ApocalypterHeadTracking.png into
 BepInEx\plugins\ while the game is closed.
+
+What's new in 0.1.9
+-------------------
+- Fixed the conflict with camera-writing mods ("Head bob and visible legs"):
+  the head offset now lives on its own rig object, and the mod no longer writes
+  the camera transform itself. No more rolled camera after driving with the
+  mouse when another head-bob mod is active.
 
 What's new in 0.1.8
 -------------------
