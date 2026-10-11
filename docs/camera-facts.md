@@ -62,8 +62,9 @@ would exist (it is on in the shipped scene).
 - 1st person: re-activates `PlayerCamera`, deactivates `3rdCamera`.
 - No SetMainCamera/GetMainCamera anywhere — switching is pure GO activate/deactivate.
 
-→ checking `PlayerCamera.activeInHierarchy` is the entire "first-person only" rule,
-including 1st-person driving.
+→ checking `PlayerCamera.activeInHierarchy` is the first-person gate. Since 0.1.12,
+failing the gate with `ThirdPerson` on applies rotation to the camera that is
+actually rendering instead (see the 0.1.10–0.1.12 additions below).
 
 ## NWH cameras (inert in this game)
 
@@ -97,7 +98,7 @@ exact by construction — the 0.1.1–0.1.8 CMP-interleave invariant is obsolete
 Residual risk: a mod that re-parents or destroys `PlayerCamera` itself (the rig
 repairs on the next resolve; resolve = throttled find, name-based).
 
-## 0.1.10–0.1.11 additions (sunset state)
+## 0.1.10–0.1.12 additions (sunset state)
 
 - **0.1.10**: if another mod re-parents PlayerCamera away from the holder, the
   runtime finds it by its MainCamera tag (name-verified) and the rig re-parents
@@ -107,4 +108,9 @@ repairs on the next resolve; resolve = throttled find, name-based).
 - **0.1.11**: camera lean is hard-bounded to human reach — per-axis
   X ±45 / Y ±30 / Z ±30 cm plus a 50 cm radial cap, applied after sensitivity,
   all four configurable (MaxLeanX/Y/Z/Radius, 0–150).
-- Maintenance handoff: CONTEXT.md (local). Sunset 2026-10-11, v0.1.11.
+- **0.1.12**: third-person mode — when PlayerCamera is inactive and
+  `ThirdPerson` is on, rotation-only headtracking is applied to the active
+  rendering camera (`Camera.main`, allCameras fallback) with the legacy
+  exact-strip write on that camera's own transform; lean stays first-person
+  only; HUD shows `[3rd person]`.
+- Maintenance handoff: CONTEXT.md (local). Sunset 2026-10-11, v0.1.12.

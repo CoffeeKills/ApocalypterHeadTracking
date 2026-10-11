@@ -2,7 +2,7 @@
 
 ## Status
 
-Version 0.1.11-alpha. **[0.1.x]** marks items changed in a release; older tags are kept.
+Version 0.1.12-alpha. **[0.1.x]** marks items changed in a release; older tags are kept.
 
 - [x] FreeTrack 2.0 shared-memory input (`FT_SharedMem`). **[0.1.1]** Layout and
       encoding are source-verified against OpenTrack: radians, yaw/pitch negated,
@@ -84,5 +84,6 @@ Version 0.1.11-alpha. **[0.1.x]** marks items changed in a release; older tags a
 
 - No tracking/filtering of the head pose itself (OpenTrack's Kalman/Accela/curves
   remain the user's setup).
-- No 3rd-person / vehicle 3rdCamera rotation.
+- 3rd-person / vehicle 3rdCamera rotation: off by default — **[0.1.12]**
+  available via `ThirdPerson` (rotation only, accessibility look-around).
 - No Harmony patches, no reference to Assembly-CSharp or Apocasetter DLLs.

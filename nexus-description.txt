@@ -27,7 +27,8 @@ the wheel or keyboard.
 - Recenter key (F8): look straight ahead, press, that's your neutral
 - Mode switch: full tracking, rotation only, or lean only (bindable key)
 - Status HUD with live tracking state
-- First-person only: the 3rd-person vehicle camera is never touched
+- First-person by default; optional third-person mode (rotation only) for
+  look-around without the mouse — accessibility
 - Every setting in the Apocasetter Mods menu (F6) — live sliders, no restarts
 - Input: FreeTrack 2.0 shared memory (OpenTrack → Output → FreeTrack 2.0)
   or OpenTrack UDP over network
@@ -82,6 +83,8 @@ Problems? Contact @OddlyTugs on Discord.
 - 0.1.10: auto-repair if another mod moves the camera; UseIsolationRig toggle
 - 0.1.11: human lean bounds (camera can't leave the character further than a
   human could; configurable)
+- 0.1.12: third-person mode (ThirdPerson + hotkey) — rotation headtracking
+  on the vehicle 3rd camera and modded third-person cameras
 
 - 0.1.1: FreeTrack units fixed (radians, signs), still-head tracking, exact
   camera hand-back

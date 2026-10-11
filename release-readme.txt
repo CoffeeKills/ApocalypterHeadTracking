@@ -5,8 +5,8 @@ Headtracking for Apocalypter's first-person view via OpenTrack.
 
 - FreeTrack 2.0 shared-memory input (OpenTrack -> Output -> FreeTrack 2.0)
 - OpenTrack UDP input (Output -> UDP over network, default port 4242)
-- First-person only: on foot and while driving in 1st person; the vehicle
-  3rd-person camera is never touched.
+- First-person by default; optional third-person mode (rotation only) for
+  look-around without the mouse (accessibility).
 - Smoothed additive camera rotation: sensitivity per axis, invert, pitch clamp,
   roll (off by default).
 - Recenter key F8 (hold-this-pose neutral), optional toggle key.

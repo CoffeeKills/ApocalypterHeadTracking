@@ -13,8 +13,9 @@ pose directly and rotates the first-person camera additively.
 - **FreeTrack 2.0** input (OpenTrack → Output → *FreeTrack 2.0*): the standard
   shared-memory protocol, zero configuration on the mod side.
 - **OpenTrack UDP** input as an alternative (Output → *UDP over network*).
-- **First-person only**: applied on foot and while driving in 1st person. The
-  vehicle 3rd-person camera (C key) is never touched.
+- **First-person by default**: on foot and while driving in 1st person. Optional
+  `ThirdPerson` mode adds rotation-only headtracking on the vehicle 3rd camera
+  (C key) and modded third-person cameras (accessibility look-around).
 - **Apocasetter-ready**: every setting is a ranged, described BepInEx config entry —
   the [Apocasetter](https://github.com/DeonUrist/Apocasetter) Mods menu (F6) lists
   the mod with live editors for free.
@@ -84,10 +85,11 @@ first run) and in the Apocasetter Mods menu:
   Unity metres. The mod converts head cm to metres and removes the mouse pitch
   (0.1.5).
 - The vehicle camera switch (C key) deactivates `PlayerCamera` for 3rd person and
-  re-activates it for 1st — the mod applies its offset only while `PlayerCamera` is
-  active, which is the entire "first-person only" rule. When the camera goes
-  inactive the mod strips its offset immediately, so it re-activates exactly as
-  the game left it (0.1.1).
+  re-activates it for 1st — the mod applies its offset only while `PlayerCamera`
+  is active (the first-person gate). When the camera goes inactive the mod
+  strips its offset immediately, so it re-activates exactly as the game left it
+  (0.1.1). With `ThirdPerson` on (0.1.12), the offset instead follows the camera
+  that is actually rendering, rotation only.
 - No Harmony patches, no game-code references: the camera is resolved by
   `GameObject.Find("PlayerCameraHolder")` + child `PlayerCamera`, cached, and
   re-found (throttled, ≤ 2×/s; immediately on scene load) when destroyed, moved

@@ -1,8 +1,9 @@
 # Task: audit and rework "Apocalypter Head Tracking" (BepInEx mod for the Unity game Apocalypter) — round 2
 
 > **Status note (sunset 2026-10-11):** round 1 delivered (0.1.1) and round 2
-> delivered (0.1.5 + 0.1.6). The tree has since moved to **0.1.11** (isolation
-> rig 0.1.9, resilience 0.1.10, human lean bounds 0.1.11). This prompt is kept
+> delivered (0.1.5 + 0.1.6). The tree has since moved to **0.1.12** (isolation
+> rig 0.1.9, resilience 0.1.10, human lean bounds 0.1.11, third-person mode
+> 0.1.12). This prompt is kept
 > as the template for any future audit round — update the "what is open" section
 > from CONTEXT.md before sending it.
 
@@ -62,8 +63,10 @@ it, but it is the only existing test tooling — reason through it carefully.
   on the RIGHT of localRotation each LateUpdate and ADDS its position delta — the
   mod's pre-multiplied rotation and additive position follow from that; preserve
   the exact-strip property.
-- **First-person only**: offsets are applied only while `PlayerCamera` is
-  activeInHierarchy. The vehicle 3rdCamera and menus must never be touched.
+- **First-person by default**: offsets are applied only while `PlayerCamera`
+  is activeInHierarchy, EXCEPT the 0.1.12 `ThirdPerson` mode, which applies
+  rotation only to the active rendering camera when it is inactive. Menus are
+  never touched.
 - Allocation-free `Update`/`LateUpdate` (they run every frame).
 - Never call `ES3.Save` — the game's save data is read-only for mods.
 - Never write game input, PlayMaker FSM variables, or `vc.input.*` state.
