@@ -57,6 +57,8 @@ first run) and in the Apocasetter Mods menu:
 | `ToggleKey` | None | key | In-game on/off switch. |
 | `Mode` | 0 | 0 / 1 / 2 | What the head moves: 0 = rotation + lean, 1 = rotation only, 2 = lean only. |
 | `ModeKey` | None | key | Cycles `Mode` in-game (comparable mods use PageUp). |
+| `ThirdPerson` | false | bool | Also apply headtracking in 3rd person (vehicle 3rd camera, modded third-person cameras) — rotation only, no lean. For looking around without the mouse (accessibility). |
+| `ThirdPersonKey` | None | key | Hotkey that toggles `ThirdPerson` in-game. |
 | `ShowHud` | true | bool | Status line with live yaw/pitch. |
 | `UseIsolationRig` | true | bool | Keep the offset on the mod's own rig (immune to other camera mods). Off = pre-0.1.9 direct-write mode, for mods that need PlayerCamera as a direct child of the holder. |
 | `[Debug] LogPose` | false | bool | Raw tracker values once per second. |
@@ -122,6 +124,15 @@ Install: copy `plugin\bin\Release\netstandard2.0\ApocalypterHeadTracking.dll` an
 game is closed** (the game locks the DLL while running).
 
 ## Changes
+
+### Changes in 0.1.12-alpha
+
+- **Third-person mode** (`ThirdPerson`, default off; `ThirdPersonKey` hotkey):
+  rotation-only headtracking applied to whatever camera is rendering when
+  `PlayerCamera` is inactive — the vehicle 3rd camera, modded third-person
+  cameras. For looking around without touching the mouse (accessibility), lean
+  stays off because dollied cameras fight translation. The HUD shows
+  `[3rd person]`.
 
 ### Changes in 0.1.11-alpha
 

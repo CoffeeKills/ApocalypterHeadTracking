@@ -47,7 +47,11 @@ namespace ApocalypterHeadTracking.Runtime
             string line = "Head Tracking [" + source + "]: " + _runtime.Status;
             if (_runtime.Status == "tracking")
             {
-                if (!_runtime.CameraActive)
+                if (_runtime.ThirdPersonActive)
+                {
+                    line += "  [3rd person]";
+                }
+                else if (!_runtime.CameraActive)
                 {
                     line += " (idle: no 1st-person camera)";
                 }

@@ -69,6 +69,10 @@ Version 0.1.11-alpha. **[0.1.x]** marks items changed in a release; older tags a
 - [x] **[0.1.11]** Human lean bounds: per-axis hard caps (X 45 / Y 30 / Z 30 cm)
       plus a 50 cm radial cap, applied after sensitivity; all four configurable
       (`MaxLeanX/Y/Z/Radius`, 0–150) for setups that want different bounds.
+- [x] **[0.1.12]** Third-person mode (`ThirdPerson` + `ThirdPersonKey` hotkey):
+      rotation-only headtracking on the camera that is actually rendering when
+      PlayerCamera is inactive (vehicle 3rd camera, modded third-person
+      cameras) — accessibility look-around. HUD shows `[3rd person]`.
 - [ ] Head translation (x/y/z lean) — **[0.1.2] shipped: rotation + translation.
       Removed from the not-planned list.**
 - [ ] Verify harness: not planned for v1 (lite-mod precedent). The 0.1.1 audit

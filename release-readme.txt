@@ -1,4 +1,4 @@
-Apocalypter Head Tracking v0.1.11-alpha
+Apocalypter Head Tracking v0.1.12-alpha
 ======================================
 
 Headtracking for Apocalypter's first-person view via OpenTrack.
@@ -26,6 +26,12 @@ Install
 -------
 Copy ApocalypterHeadTracking.dll and ApocalypterHeadTracking.png into
 BepInEx\plugins\ while the game is closed.
+
+What's new in 0.1.12
+-------------------
+- Third-person mode (ThirdPerson, default off) + ThirdPersonKey hotkey: rotation
+  headtracking on the vehicle 3rd camera and modded third-person cameras — look
+  around without the mouse (accessibility). Lean stays first-person only.
 
 What's new in 0.1.11
 -------------------

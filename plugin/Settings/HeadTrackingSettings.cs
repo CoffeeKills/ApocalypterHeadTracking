@@ -44,6 +44,8 @@ namespace ApocalypterHeadTracking.Settings
         public static float MaxLeanY = Limits.MaxLeanYDefault;
         public static float MaxLeanZ = Limits.MaxLeanZDefault;
         public static float MaxLeanRadius = Limits.MaxLeanRadiusDefault;
+        public static bool ThirdPerson = false;   // accessibility look-around
+        public static KeyCode ThirdPersonKey = KeyCode.None;
         public static bool ShowHud = true;
         public static bool LogPose = false;
         public static bool SimulateInput = false;

@@ -28,13 +28,14 @@ namespace ApocalypterHeadTracking.Persistence
         private static ConfigEntry<bool> _invertYaw, _invertPitch, _invertX, _invertY, _invertZ;
         private static ConfigEntry<float> _smoothing;
         private static ConfigEntry<float> _maxPitch;
-        private static ConfigEntry<KeyboardShortcut> _recenterKey, _toggleKey, _modeKey;
+        private static ConfigEntry<KeyboardShortcut> _recenterKey, _toggleKey, _modeKey, _thirdPersonKey;
         private static ConfigEntry<int> _mode;
         private static ConfigEntry<bool> _showHud;
         private static ConfigEntry<bool> _logPose;
         private static ConfigEntry<bool> _simulateInput;
         private static ConfigEntry<bool> _useIsolationRig;
         private static ConfigEntry<float> _maxLeanX, _maxLeanY, _maxLeanZ, _maxLeanRadius;
+        private static ConfigEntry<bool> _thirdPerson;
         // Read by Apocasetter via Chainloader (not wired to SettingsChanged — we never read it).
         private static ConfigEntry<bool> _apocasetter;
         // 0.1.5: file-format marker for one-time migrations (not a runtime setting).
@@ -50,6 +51,22 @@ namespace ApocalypterHeadTracking.Persistence
             _enabled.Value = value;
             // SaveOnConfigSet (BepInEx default: on) already wrote the file; 0.1.0
             // saved a second time on every toggle-key press.
+            if (!_config.SaveOnConfigSet)
+            {
+                _config.Save();
+            }
+        }
+
+        /// <summary>Toggle [HeadTracking] ThirdPerson (the ThirdPersonKey handler).
+        /// Same write path as SetEnabled, so it is persisted and Apocasetter shows
+        /// the new value.</summary>
+        public static void SetThirdPerson(bool value)
+        {
+            if (_thirdPerson == null)
+            {
+                return;
+            }
+            _thirdPerson.Value = value;
             if (!_config.SaveOnConfigSet)
             {
                 _config.Save();
@@ -157,6 +174,12 @@ namespace ApocalypterHeadTracking.Persistence
                 "Hard cap: how far the camera can move forward/back from the character, cm (default = human).");
             _maxLeanRadius = BindRange("HeadTracking", "MaxLeanRadius", Limits.MaxLeanRadiusDefault, Limits.MaxLeanMin, Limits.MaxLeanMax,
                 "Hard cap: total camera distance from the character across all axes combined, cm (default = human reach).");
+            _thirdPerson = config.Bind("HeadTracking", "ThirdPerson", false,
+                "Also apply headtracking in 3rd person (vehicle 3rd camera, modded third-person cameras): "
+                + "rotation only, no lean — for looking around without touching the mouse (accessibility).");
+            _thirdPersonKey = config.Bind("HeadTracking", "ThirdPersonKey",
+                new KeyboardShortcut(KeyCode.None),
+                "Hotkey that toggles ThirdPerson in-game (None = no key).");
             _apocasetter = config.Bind("General", "Apocasetter", true,
                 "Show this mod in the Apocasetter Mods menu (requires Apocasetter installed).");
             _configVersion = config.Bind("General", "ConfigVersion", Limits.ConfigVersion,
@@ -287,6 +310,8 @@ namespace ApocalypterHeadTracking.Persistence
             Wire(_maxLeanY);
             Wire(_maxLeanZ);
             Wire(_maxLeanRadius);
+            Wire(_thirdPerson);
+            Wire(_thirdPersonKey);
         }
 
         private static void Wire<T>(ConfigEntry<T> entry)
@@ -353,6 +378,8 @@ namespace ApocalypterHeadTracking.Persistence
             HeadTrackingSettings.MaxLeanY = _maxLeanY.Value;
             HeadTrackingSettings.MaxLeanZ = _maxLeanZ.Value;
             HeadTrackingSettings.MaxLeanRadius = _maxLeanRadius.Value;
+            HeadTrackingSettings.ThirdPerson = _thirdPerson.Value;
+            HeadTrackingSettings.ThirdPersonKey = _thirdPersonKey.Value.MainKey;
         }
     }
 }

@@ -35,6 +35,7 @@ namespace ApocalypterHeadTracking.Runtime
         // ------------------------------------------------------------- HUD read-outs
         public string Status = "off";
         public bool CameraActive;
+        public bool ThirdPersonActive;
         public float DisplayYaw;
         public float DisplayPitch;
 
@@ -112,6 +113,11 @@ namespace ApocalypterHeadTracking.Runtime
                 && UnityEngine.Input.GetKeyDown(HeadTrackingSettings.ModeKey))
             {
                 ModConfig.CycleMode();
+            }
+            if (HeadTrackingSettings.ThirdPersonKey != KeyCode.None
+                && UnityEngine.Input.GetKeyDown(HeadTrackingSettings.ThirdPersonKey))
+            {
+                ModConfig.SetThirdPerson(!HeadTrackingSettings.ThirdPerson);
             }
 
             if (!HeadTrackingSettings.Enabled)
@@ -391,13 +397,20 @@ namespace ApocalypterHeadTracking.Runtime
             Transform cam = ResolveCamera();
             if (cam == null || !cam.gameObject.activeInHierarchy)
             {
+                if (HeadTrackingSettings.ThirdPerson)
+                {
+                    ApplyThirdPerson();
+                    return;
+                }
                 // 3rd person / menu / no player: hand the camera back NOW, so it
                 // re-activates exactly as the game left it.
                 RemoveOffset();
                 CameraActive = false;
+                ThirdPersonActive = false;
                 return;
             }
             CameraActive = true;
+            ThirdPersonActive = false;
 
             if (wantRig)
             {
@@ -450,6 +463,72 @@ namespace ApocalypterHeadTracking.Runtime
                 _hasOffset = true;
                 _hasPos = true;
             }
+        }
+
+        /// <summary>
+        /// 0.1.12 third-person mode (accessibility): while PlayerCamera is inactive
+        /// (vehicle 3rd camera, modded third-person cameras) the rotation offset is
+        /// applied to the camera that is actually rendering, rotation only — lean
+        /// stays off because dollied/3rd-person cameras fight translation and clip
+        /// geometry. Written with the legacy exact-strip pattern on the camera's own
+        /// transform (we cannot rig-reparent arbitrary third-party cameras).
+        /// </summary>
+        private void ApplyThirdPerson()
+        {
+            Transform third = ResolveActiveCamera();
+            if (third == null || third.name == CameraName)
+            {
+                // No rendering camera / only the first-person one: nothing to do.
+                RemoveOffset();
+                CameraActive = false;
+                ThirdPersonActive = false;
+                return;
+            }
+            if (_appliedCam != third)
+            {
+                RemoveOffset();   // the offset (if any) belongs to another camera
+            }
+            if (!_tracking && _smooth.sqrMagnitude < 1e-4f)
+            {
+                _smooth = Vector3.zero;
+                RemoveOffset();
+                CameraActive = false;
+                ThirdPersonActive = false;
+                return;
+            }
+            CameraActive = true;
+            ThirdPersonActive = true;
+            // No holder anchor in 3rd person: yaw turns about the camera's own up
+            // (hp = 0), the natural look-around behaviour.
+            Quaternion h = ComputeOffset(0f);
+            Quaternion vanilla = _hasOffset
+                ? Quaternion.Inverse(_applied) * third.localRotation
+                : third.localRotation;
+            third.localRotation = h * vanilla;
+            _applied = h;
+            _appliedCam = third;
+            _hasOffset = true;
+        }
+
+        /// <summary>The enabled camera that is actually rendering, or null.
+        /// Camera.main covers the game's cameras (both are MainCamera-tagged);
+        /// the scan covers third-party cameras that aren't.</summary>
+        private Transform ResolveActiveCamera()
+        {
+            Camera main = Camera.main;
+            if (main != null && main.isActiveAndEnabled)
+            {
+                return main.transform;
+            }
+            Camera[] all = Camera.allCameras;
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i] != null && all[i].isActiveAndEnabled)
+                {
+                    return all[i].transform;
+                }
+            }
+            return null;
         }
 
         /// <summary>Convert between rig and direct-write mode with the camera state
