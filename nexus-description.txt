@@ -78,21 +78,21 @@ Problems? Contact @OddlyTugs on Discord.
 
 ## Changelog (highlights)
 
-- 0.1.9: isolation rig — other camera mods can no longer corrupt the camera
-  (fixed the "head bob and visible legs" conflict)
-- 0.1.10: auto-repair if another mod moves the camera; UseIsolationRig toggle
-- 0.1.11: human lean bounds (camera can't leave the character further than a
-  human could; configurable)
 - 0.1.12: third-person mode (ThirdPerson + hotkey) — rotation headtracking
   on the vehicle 3rd camera and modded third-person cameras
-
-- 0.1.1: FreeTrack units fixed (radians, signs), still-head tracking, exact
-  camera hand-back
-- 0.1.2: head lean (pan/height/forward-back)
+- 0.1.11: human lean bounds (camera can't leave the character further than a
+  human could; configurable)
+- 0.1.10: auto-repair if another mod moves the camera; UseIsolationRig toggle
+- 0.1.9: isolation rig — other camera mods can no longer corrupt the camera
+  (fixed the "head bob and visible legs" conflict)
+- 0.1.8: new icon
+- 0.1.7: shown as "Head Tracking" in the mods list
+- 0.1.6: rotation-only / lean-only modes
 - 0.1.5: lean root cause fixed (cm treated as metres — the "camera flew away"
   bug); OpenTrack-correct lean directions; your old config migrates itself
-- 0.1.6: rotation-only / lean-only modes
-- 0.1.7: shown as "Head Tracking" in the mods list
-- 0.1.8: new icon
+- 0.1.3/0.1.4: translation sensitivity re-scaled (superseded by the 0.1.5 fix)
+- 0.1.2: head lean (pan/height/forward-back)
+- 0.1.1: FreeTrack units fixed (radians, signs), still-head tracking, exact
+  camera hand-back
 
 GitHub: https://github.com/CoffeeKills/ApocalypterHeadTracking
