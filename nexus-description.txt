@@ -77,6 +77,12 @@ Problems? Contact @OddlyTugs on Discord.
 
 ## Changelog (highlights)
 
+- 0.1.9: isolation rig — other camera mods can no longer corrupt the camera
+  (fixed the "head bob and visible legs" conflict)
+- 0.1.10: auto-repair if another mod moves the camera; UseIsolationRig toggle
+- 0.1.11: human lean bounds (camera can't leave the character further than a
+  human could; configurable)
+
 - 0.1.1: FreeTrack units fixed (radians, signs), still-head tracking, exact
   camera hand-back
 - 0.1.2: head lean (pan/height/forward-back)

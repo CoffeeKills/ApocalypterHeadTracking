@@ -58,6 +58,7 @@ first run) and in the Apocasetter Mods menu:
 | `Mode` | 0 | 0 / 1 / 2 | What the head moves: 0 = rotation + lean, 1 = rotation only, 2 = lean only. |
 | `ModeKey` | None | key | Cycles `Mode` in-game (comparable mods use PageUp). |
 | `ShowHud` | true | bool | Status line with live yaw/pitch. |
+| `UseIsolationRig` | true | bool | Keep the offset on the mod's own rig (immune to other camera mods). Off = pre-0.1.9 direct-write mode, for mods that need PlayerCamera as a direct child of the holder. |
 | `[Debug] LogPose` | false | bool | Raw tracker values once per second. |
 | `[Debug] SimulateInput` | false | bool | Numpad fake head (4/6 yaw, 8/2 pitch, 7/9 roll, 1/3 lean, 5 zero). No tracker needed. |
 | `[General] Apocasetter` | true | bool | Opt-in for the Apocasetter Mods menu. |
@@ -365,6 +366,7 @@ status HUD, full Apocasetter config integration.
 
 ## Credits
 
-Developed with **Claude Code (DeepSeek API)** and **Claude Chat**, with a
-third-party AI audit pass. Original request and testing: the Apocalypter modding
-community (issue #1 by runcajsz).
+Developed via the **Claude Code harness running the DeepSeek API**; the
+third-party audit rounds (0.1.1, 0.1.5, 0.1.6) were performed by **Claude Chat**.
+Original request and testing: the Apocalypter modding community (issue #1 by
+runcajsz).

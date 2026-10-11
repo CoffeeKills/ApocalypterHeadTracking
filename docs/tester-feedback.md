@@ -30,3 +30,14 @@ The translation sliders currently run 0–0.05 with default 0.01 — users tune 
 default 10), (b) per-axis range sliders (meta-config), (c) unconstrained free-text
 fields without sliders. Owner leans against (c) and against meta-config; wants the
 audit's community research to inform the final call.
+
+## Round 3 (2026-10-10, issue #2 — runcajsz)
+
+- "Using my mouse while driving produces a rolled center camera position…
+  recenter and toggling don't fix it, only save/reload. Roll is 0 in settings."
+- Tester self-diagnosed: conflict with the "Head bob and visible legs" mod —
+  disabling that mod's head-bob lets the camera reset on W.
+- Fixed by the 0.1.9 isolation rig (offset moved off the camera onto the mod's
+  own rig object; other camera writers compose below it and can no longer
+  corrupt the hand-back). 0.1.10 added the UseIsolationRig escape hatch +
+  tag-fallback repair; 0.1.11 added human lean bounds.

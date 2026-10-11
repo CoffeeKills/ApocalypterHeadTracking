@@ -1,5 +1,11 @@
 # Task: audit and rework "Apocalypter Head Tracking" (BepInEx mod for the Unity game Apocalypter) — round 2
 
+> **Status note (sunset 2026-10-11):** round 1 delivered (0.1.1) and round 2
+> delivered (0.1.5 + 0.1.6). The tree has since moved to **0.1.11** (isolation
+> rig 0.1.9, resilience 0.1.10, human lean bounds 0.1.11). This prompt is kept
+> as the template for any future audit round — update the "what is open" section
+> from CONTEXT.md before sending it.
+
 Read **README.md first** — it contains the verified game-architecture facts that drive
 every unusual design decision in this codebase. Treat those facts as load-bearing: a
 rework must preserve them. The decompiled game code you need is in `gamecode/`,

@@ -96,3 +96,15 @@ head-bob mods) composes BELOW the rig, so the hand-back (rig at identity) is
 exact by construction — the 0.1.1–0.1.8 CMP-interleave invariant is obsolete.
 Residual risk: a mod that re-parents or destroys `PlayerCamera` itself (the rig
 repairs on the next resolve; resolve = throttled find, name-based).
+
+## 0.1.10–0.1.11 additions (sunset state)
+
+- **0.1.10**: if another mod re-parents PlayerCamera away from the holder, the
+  runtime finds it by its MainCamera tag (name-verified) and the rig re-parents
+  it back — self-healing. `UseIsolationRig = false` switches live to the
+  pre-0.1.9 direct-write path (pre-multiply + exact inverse strip) for mods that
+  require PlayerCamera to stay a direct child of the holder.
+- **0.1.11**: camera lean is hard-bounded to human reach — per-axis
+  X ±45 / Y ±30 / Z ±30 cm plus a 50 cm radial cap, applied after sensitivity,
+  all four configurable (MaxLeanX/Y/Z/Radius, 0–150).
+- Maintenance handoff: CONTEXT.md (local). Sunset 2026-10-11, v0.1.11.

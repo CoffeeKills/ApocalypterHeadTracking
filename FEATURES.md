@@ -2,7 +2,7 @@
 
 ## Status
 
-Version 0.1.6-alpha. **[0.1.6]** marks items changed in this release; older tags are kept.
+Version 0.1.11-alpha. **[0.1.x]** marks items changed in a release; older tags are kept.
 
 - [x] FreeTrack 2.0 shared-memory input (`FT_SharedMem`). **[0.1.1]** Layout and
       encoding are source-verified against OpenTrack: radians, yaw/pitch negated,
@@ -66,6 +66,9 @@ Version 0.1.6-alpha. **[0.1.6]** marks items changed in this release; older tags
       back to direct-write mode for mods that need PlayerCamera as a direct
       child. Landscape surveyed (Apocasetter index): Apocaplayer / ApocaHUD43 /
       Part Adjuster Tools are compatible or non-overlapping.
+- [x] **[0.1.11]** Human lean bounds: per-axis hard caps (X 45 / Y 30 / Z 30 cm)
+      plus a 50 cm radial cap, applied after sensitivity; all four configurable
+      (`MaxLeanX/Y/Z/Radius`, 0–150) for setups that want different bounds.
 - [ ] Head translation (x/y/z lean) — **[0.1.2] shipped: rotation + translation.
       Removed from the not-planned list.**
 - [ ] Verify harness: not planned for v1 (lite-mod precedent). The 0.1.1 audit
